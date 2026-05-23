@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#121417" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Palco" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Quermesse UniSALESIANO</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="lock-screen" id="lockScreen">
+      <div class="lock-panel">
+        <p class="eyebrow">Acesso local</p>
+        <h2 id="lockTitle">Criar PIN</h2>
+        <p id="lockHelp">Crie um PIN para proteger este app no seu aparelho.</p>
+        <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN" />
+        <input id="pinConfirmInput" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Confirmar PIN" />
+        <button class="primary-button full" id="unlockBtn" type="button">Entrar</button>
+        <p class="lock-error" id="lockError"></p>
+      </div>
+    </section>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Painel do locutor</p>
+          <h1>Quermesse UniSALESIANO</h1>
+          <p class="offline-status" id="offlineStatus">Preparando offline...</p>
+        </div>
+        <button class="icon-button" id="resetBtn" type="button" title="Restaurar roteiro">↺</button>
+      </header>
+
+      <nav class="tabs" aria-label="Seções">
+        <button class="tab active" data-view="home" type="button">Home</button>
+        <button class="tab" data-view="edit" type="button">Editar</button>
+      </nav>
+
+      <section class="view active" id="homeView">
+        <div class="topic-grid" id="topicGrid"></div>
+      </section>
+
+      <section class="view presenter" id="presentView">
+        <div class="presenter-card">
+          <div class="presenter-meta">
+            <button class="home-link" id="homeBtn" type="button">← Home</button>
+            <span id="presentCounter">1/1</span>
+          </div>
+          <div class="presenter-topic" id="presentTopic">Informes</div>
+          <article id="presentText" class="present-text"></article>
+          <div class="repeat-line">
+            <span id="repeatText">Restam 0 de 0</span>
+            <button class="secondary-button" id="editCurrentBtn" type="button">Editar</button>
+          </div>
+          <div class="presenter-controls">
+            <button class="primary-button" id="doneBtn" type="button">Falei</button>
+            <button class="secondary-button" id="nextBtn" type="button">Próximo</button>
+            <button class="secondary-button previous-control" id="prevBtn" type="button">Anterior</button>
+          </div>
+          <label class="speed-control">
+            Tamanho do texto
+            <input id="fontRange" type="range" min="28" max="60" value="40" />
+          </label>
+        </div>
+      </section>
+
+      <section class="view" id="editView">
+        <div class="edit-tools">
+          <button class="primary-button" id="addTopicBtn" type="button">+ Botão</button>
+          <button class="secondary-button" id="addSpeechBtn" type="button">+ Fala</button>
+          <button class="secondary-button" id="renameTopicBtn" type="button">Renomear botão</button>
+          <button class="secondary-button" id="reorderTopicsBtn" type="button">Reordenar Home</button>
+          <button class="secondary-button" data-view-button="transfer" type="button">Transferir roteiro</button>
+        </div>
+        <div class="toolbar">
+          <select id="topicFilter" aria-label="Filtrar tópico">
+            <option value="todos">Todos os tópicos</option>
+          </select>
+        </div>
+        <div class="script-list" id="scriptList"></div>
+      </section>
+
+      <section class="view" id="transferView">
+        <div class="transfer-panel">
+          <h2>Transferir roteiro</h2>
+          <p>Use para preparar no computador e levar para o iPhone. No computador, copie o backup. No iPhone, cole aqui e toque em importar.</p>
+          <div class="transfer-actions">
+            <button class="primary-button" id="exportBtn" type="button">Gerar backup</button>
+            <button class="secondary-button" id="copyBackupBtn" type="button">Copiar</button>
+          </div>
+          <input id="backupPassword" type="password" autocomplete="new-password" placeholder="Senha do backup" />
+          <textarea id="backupText" rows="8" placeholder="O backup do roteiro aparece aqui."></textarea>
+          <button class="primary-button full" id="importBackupBtn" type="button">Importar backup colado</button>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="speechDialog">
+      <form method="dialog" class="dialog-form">
+        <h2 id="dialogTitle">Nova fala</h2>
+        <label>
+          Tópico
+          <select id="editTopic"></select>
+        </label>
+        <label>
+          Repetir quantas vezes?
+          <input id="editTarget" type="number" min="1" max="20" value="1" />
+        </label>
+        <label>
+          Texto
+          <textarea id="editText" rows="7"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
+          <button class="primary-button" id="saveSpeechBtn" value="default" type="submit">Salvar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="topicDialog">
+      <form method="dialog" class="dialog-form">
+        <h2>Novo botão</h2>
+        <label>
+          Nome do botão
+          <input id="newTopicName" type="text" maxlength="28" placeholder="Ex: Sorteio" />
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
+          <button class="primary-button" id="saveTopicBtn" value="default" type="submit">Criar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="renameTopicDialog">
+      <form method="dialog" class="dialog-form">
+        <h2>Renomear botão</h2>
+        <label>
+          Nome atual
+          <select id="renameTopicFrom"></select>
+        </label>
+        <label>
+          Novo nome
+          <input id="renameTopicTo" type="text" maxlength="28" />
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
+          <button class="primary-button" id="saveRenameTopicBtn" value="default" type="submit">Salvar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="reorderDialog">
+      <form method="dialog" class="dialog-form">
+        <h2>Reordenar Home</h2>
+        <div class="reorder-list" id="reorderList"></div>
+        <div class="dialog-actions">
+          <button class="primary-button" value="default" type="submit">Fechar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>

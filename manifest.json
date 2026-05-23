@@ -1,0 +1,19 @@
+{
+  "name": "Roteiro de Palco",
+  "short_name": "Palco",
+  "description": "App pessoal para locução de palco com roteiro offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#121417",
+  "theme_color": "#121417",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
