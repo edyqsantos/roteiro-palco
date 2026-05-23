@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
+const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 
 const defaultTopics = [
   'Informes',
@@ -135,16 +136,9 @@ const newTopicName = document.querySelector('#newTopicName');
 const renameTopicFrom = document.querySelector('#renameTopicFrom');
 const renameTopicTo = document.querySelector('#renameTopicTo');
 const backupText = document.querySelector('#backupText');
-const backupPassword = document.querySelector('#backupPassword');
 const reorderList = document.querySelector('#reorderList');
 const offlineStatus = document.querySelector('#offlineStatus');
-const lockScreen = document.querySelector('#lockScreen');
-const lockTitle = document.querySelector('#lockTitle');
-const lockHelp = document.querySelector('#lockHelp');
-const pinInput = document.querySelector('#pinInput');
-const pinConfirmInput = document.querySelector('#pinConfirmInput');
-const unlockBtn = document.querySelector('#unlockBtn');
-const lockError = document.querySelector('#lockError');
+const restorePointStatus = document.querySelector('#restorePointStatus');
 
 document.querySelectorAll('.tab').forEach((tab) => {
   tab.addEventListener('click', () => setView(tab.dataset.view));
@@ -175,13 +169,8 @@ document.querySelector('#fontRange').addEventListener('input', (event) => {
 document.querySelector('#exportBtn').addEventListener('click', exportBackup);
 document.querySelector('#copyBackupBtn').addEventListener('click', copyBackup);
 document.querySelector('#importBackupBtn').addEventListener('click', importBackup);
-unlockBtn.addEventListener('click', unlockWithPin);
-pinInput.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') unlockWithPin();
-});
-pinConfirmInput.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') unlockWithPin();
-});
+document.querySelector('#saveRestorePointBtn').addEventListener('click', saveRestorePoint);
+document.querySelector('#restorePointBtn').addEventListener('click', restoreSavedPoint);
 
 topicFilter.addEventListener('change', renderEditList);
 
@@ -514,25 +503,18 @@ function moveTopic(index, direction) {
   renderReorderList();
 }
 
-async function exportBackup() {
-  const password = backupPassword.value.trim();
-  if (!password) {
-    alert('DIGITE UMA SENHA PARA PROTEGER O BACKUP.');
-    backupPassword.focus();
-    return;
-  }
-
+function exportBackup() {
   const payload = {
     app: 'roteiro-palco',
     version: 1,
     exportedAt: new Date().toISOString(),
     data: state,
   };
-  backupText.value = await encryptText(JSON.stringify(payload), password);
+  backupText.value = JSON.stringify(payload, null, 2);
 }
 
 async function copyBackup() {
-  if (!backupText.value.trim()) await exportBackup();
+  if (!backupText.value.trim()) exportBackup();
   if (!backupText.value.trim()) return;
 
   try {
@@ -553,24 +535,12 @@ async function copyBackup() {
   }
 }
 
-async function importBackup() {
+function importBackup() {
   const raw = backupText.value.trim();
   if (!raw) return;
 
   try {
-    const parsedRaw = JSON.parse(raw);
-    let parsed = parsedRaw;
-
-    if (parsedRaw.encrypted === true) {
-      const password = backupPassword.value.trim();
-      if (!password) {
-        alert('DIGITE A SENHA DO BACKUP.');
-        backupPassword.focus();
-        return;
-      }
-      parsed = JSON.parse(await decryptText(parsedRaw, password));
-    }
-
+    const parsed = JSON.parse(raw);
     const nextState = parsed.data ? parsed.data : parsed;
     state = normalizeState(nextState);
     activeTopic = state.topics[0] || 'Informes';
@@ -579,7 +549,56 @@ async function importBackup() {
     setView('home');
     alert('BACKUP IMPORTADO.');
   } catch {
-    alert('NÃO CONSEGUI IMPORTAR. CONFIRA A SENHA E SE O BACKUP FOI COLADO INTEIRO.');
+    alert('NÃO CONSEGUI IMPORTAR. CONFIRA SE O BACKUP FOI COLADO INTEIRO.');
+  }
+}
+
+function saveRestorePoint() {
+  const payload = {
+    savedAt: new Date().toISOString(),
+    data: state,
+  };
+  localStorage.setItem(RESTORE_POINT_KEY, JSON.stringify(payload));
+  renderRestorePointStatus();
+  alert('PONTO DE RESTAURAÇÃO SALVO.');
+}
+
+function restoreSavedPoint() {
+  const stored = localStorage.getItem(RESTORE_POINT_KEY);
+  if (!stored) {
+    alert('NENHUM PONTO SALVO NESTE APARELHO.');
+    return;
+  }
+
+  const shouldRestore = confirm('RESTAURAR O PONTO SALVO? AS ALTERAÇÕES ATUAIS SERÃO SUBSTITUÍDAS.');
+  if (!shouldRestore) return;
+
+  try {
+    const parsed = JSON.parse(stored);
+    state = normalizeState(parsed.data);
+    activeTopic = state.topics[0] || 'Informes';
+    currentIndex = 0;
+    saveAndRender();
+    setView('home');
+    alert('PONTO RESTAURADO.');
+  } catch {
+    alert('NÃO CONSEGUI RESTAURAR ESSE PONTO.');
+  }
+}
+
+function renderRestorePointStatus() {
+  const stored = localStorage.getItem(RESTORE_POINT_KEY);
+  if (!stored) {
+    restorePointStatus.textContent = 'Nenhum ponto salvo neste aparelho.';
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    const date = new Date(parsed.savedAt);
+    restorePointStatus.textContent = `Ponto salvo em ${date.toLocaleString('pt-BR')}.`;
+  } catch {
+    restorePointStatus.textContent = 'Existe um ponto salvo, mas ele não pôde ser lido.';
   }
 }
 
@@ -638,130 +657,8 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
-async function unlockWithPin() {
-  const pin = pinInput.value.trim();
-  const confirmPin = pinConfirmInput.value.trim();
-  const storedHash = localStorage.getItem('palco-pin-hash');
-
-  lockError.textContent = '';
-
-  if (!storedHash) {
-    if (pin.length < 4) {
-      lockError.textContent = 'Use pelo menos 4 números.';
-      return;
-    }
-
-    if (pin !== confirmPin) {
-      lockError.textContent = 'A confirmação não bate.';
-      return;
-    }
-
-    localStorage.setItem('palco-pin-hash', await sha256(pin));
-    unlockApp();
-    return;
-  }
-
-  if ((await sha256(pin)) !== storedHash) {
-    lockError.textContent = 'PIN incorreto.';
-    return;
-  }
-
-  unlockApp();
-}
-
-function setupPinLock() {
-  const hasPin = Boolean(localStorage.getItem('palco-pin-hash'));
-  lockTitle.textContent = hasPin ? 'Digite seu PIN' : 'Criar PIN';
-  lockHelp.textContent = hasPin ? 'Digite o PIN deste aparelho para abrir o app.' : 'Crie um PIN para proteger este app no seu aparelho.';
-  pinConfirmInput.style.display = hasPin ? 'none' : 'block';
-  pinInput.focus();
-}
-
-function unlockApp() {
-  pinInput.value = '';
-  pinConfirmInput.value = '';
-  lockScreen.classList.add('hidden');
-}
-
-async function sha256(value) {
-  const bytes = new TextEncoder().encode(value);
-  const hash = await crypto.subtle.digest('SHA-256', bytes);
-  return bytesToBase64(new Uint8Array(hash));
-}
-
-async function getBackupKey(password, salt) {
-  const material = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(password),
-    'PBKDF2',
-    false,
-    ['deriveKey'],
-  );
-
-  return crypto.subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt,
-      iterations: 210000,
-      hash: 'SHA-256',
-    },
-    material,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt'],
-  );
-}
-
-async function encryptText(text, password) {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await getBackupKey(password, salt);
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    new TextEncoder().encode(text),
-  );
-
-  return JSON.stringify(
-    {
-      app: 'roteiro-palco',
-      encrypted: true,
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      kdf: 'PBKDF2-SHA256',
-      iterations: 210000,
-      salt: bytesToBase64(salt),
-      iv: bytesToBase64(iv),
-      payload: bytesToBase64(new Uint8Array(encrypted)),
-    },
-    null,
-    2,
-  );
-}
-
-async function decryptText(envelope, password) {
-  const salt = base64ToBytes(envelope.salt);
-  const iv = base64ToBytes(envelope.iv);
-  const payload = base64ToBytes(envelope.payload);
-  const key = await getBackupKey(password, salt);
-  const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, payload);
-  return new TextDecoder().decode(decrypted);
-}
-
-function bytesToBase64(bytes) {
-  let value = '';
-  bytes.forEach((byte) => {
-    value += String.fromCharCode(byte);
-  });
-  return btoa(value);
-}
-
-function base64ToBytes(value) {
-  return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
-}
-
 render();
-setupPinLock();
+renderRestorePointStatus();
 registerOfflineApp();
 
 function registerOfflineApp() {

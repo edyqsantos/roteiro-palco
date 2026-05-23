@@ -24,41 +24,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.lock-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  display: grid;
-  place-items: center;
-  background: var(--bg);
-  padding: 18px;
-}
-
-.lock-screen.hidden {
-  display: none;
-}
-
-.lock-panel {
-  width: min(100%, 420px);
-  display: grid;
-  gap: 12px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  padding: 18px;
-}
-
-.lock-panel p {
-  color: var(--muted);
-  line-height: 1.4;
-}
-
-.lock-error {
-  min-height: 20px;
-  color: var(--danger) !important;
-  font-weight: 700;
-}
-
 button,
 select,
 textarea,
@@ -425,6 +390,13 @@ input[type='range'] {
 .transfer-panel p {
   color: var(--muted);
   line-height: 1.45;
+}
+
+.backup-status {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #171b20;
+  padding: 10px;
 }
 
 .transfer-actions {

@@ -8,3 +8,5 @@ Para Railway, defina as variáveis:
 
 - `APP_USER`: usuário de acesso
 - `APP_PASSWORD`: senha de acesso
+
+O app não pede PIN local. Para desfazer mudanças feitas durante o evento, use "Transferir roteiro" > "Salvar ponto" antes de começar e "Restaurar ponto" quando precisar voltar.
