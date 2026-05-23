@@ -1,5 +1,7 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
+const OFFLINE_CACHE_NAME = 'palco-offline-v8';
+const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
   'Informes',
@@ -842,7 +844,7 @@ renderRestorePointStatus();
 registerOfflineApp();
 
 function registerOfflineApp() {
-  if (!('serviceWorker' in navigator)) {
+  if (!('serviceWorker' in navigator) || !('caches' in window)) {
     offlineStatus.textContent = 'Offline indisponível neste navegador';
     return;
   }
@@ -853,17 +855,36 @@ function registerOfflineApp() {
       offlineStatus.textContent = 'Preparando offline...';
       await registration.update();
       await navigator.serviceWorker.ready;
-      const cache = await caches.open('palco-offline-v7');
-      const shellUrls = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js'].map((file) => new URL(file, window.location.href).href);
-      const cachedFiles = await Promise.all(shellUrls.map((url) => cache.match(url)));
-
-      if (cachedFiles.every(Boolean)) {
-        offlineStatus.textContent = 'Offline pronto';
-      } else {
-        offlineStatus.textContent = 'Abra novamente para concluir offline';
-      }
+      await prepareOfflineCache();
+      offlineStatus.textContent = 'Offline pronto';
     })
     .catch(() => {
       offlineStatus.textContent = 'Offline ainda não pronto';
     });
+}
+
+async function prepareOfflineCache() {
+  const cache = await caches.open(OFFLINE_CACHE_NAME);
+  const urls = OFFLINE_FILES.map((file) => new URL(file, window.location.href).href);
+
+  await Promise.all(
+    urls.map(async (url) => {
+      const response = await fetch(url, {
+        cache: 'reload',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Falha ao preparar offline: ${url}`);
+      }
+
+      await cache.put(url, response.clone());
+    }),
+  );
+
+  const currentPage = new URL('index.html', window.location.href).href;
+  const homeResponse = await cache.match(currentPage);
+  if (homeResponse) {
+    await cache.put(new URL('./', window.location.href).href, homeResponse.clone());
+  }
 }
