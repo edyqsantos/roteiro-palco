@@ -849,9 +849,24 @@ function registerOfflineApp() {
 
   navigator.serviceWorker
     .register('./service-worker.js')
-    .then((registration) => {
-      offlineStatus.textContent = 'Offline pronto';
-      registration.update();
+    .then(async (registration) => {
+      offlineStatus.textContent = 'Preparando offline...';
+      await registration.update();
+      await navigator.serviceWorker.ready;
+      const cache = await caches.open('palco-offline-v6');
+      const cachedFiles = await Promise.all([
+        cache.match('./index.html'),
+        cache.match('./styles.css'),
+        cache.match('./app.js'),
+        cache.match('./manifest.json'),
+        cache.match('./service-worker.js'),
+      ]);
+
+      if (cachedFiles.every(Boolean)) {
+        offlineStatus.textContent = 'Offline pronto';
+      } else {
+        offlineStatus.textContent = 'Abra novamente para concluir offline';
+      }
     })
     .catch(() => {
       offlineStatus.textContent = 'Offline ainda não pronto';
