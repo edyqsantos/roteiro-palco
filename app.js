@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v10';
+const OFFLINE_CACHE_NAME = 'palco-offline-v11';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -177,7 +177,6 @@ document.querySelector('#editCurrentBtn').addEventListener('click', editCurrentS
 document.querySelector('#prevBtn').addEventListener('click', () => movePresenter(-1));
 document.querySelector('#nextBtn').addEventListener('click', () => movePresenter(1));
 document.querySelector('#doneBtn').addEventListener('click', markCurrentSpoken);
-document.querySelector('#resetBtn').addEventListener('click', resetDefault);
 document.querySelector('#fontRange').addEventListener('input', (event) => {
   const maxSize = window.innerWidth <= 460 ? 46 : 60;
   const size = Math.min(Number(event.target.value), maxSize);
