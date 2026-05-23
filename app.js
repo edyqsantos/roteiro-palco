@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v8';
+const OFFLINE_CACHE_NAME = 'palco-offline-v9';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -177,7 +177,7 @@ document.querySelector('#resetBtn').addEventListener('click', resetDefault);
 document.querySelector('#fontRange').addEventListener('input', (event) => {
   const maxSize = window.innerWidth <= 460 ? 46 : 60;
   const size = Math.min(Number(event.target.value), maxSize);
-  presentText.style.fontSize = `${size}px`;
+  applyPresentFontSize(size);
 });
 document.querySelector('#exportBtn').addEventListener('click', exportBackup);
 document.querySelector('#copyBackupBtn').addEventListener('click', copyBackup);
@@ -361,8 +361,43 @@ function renderPresenter() {
   currentIndex = clamp(currentIndex, 0, speeches.length - 1);
   const speech = speeches[currentIndex];
   presentCounter.textContent = `${currentIndex + 1}/${speeches.length}`;
-  presentText.textContent = speech.text;
+  renderPresentText(speech.text);
   repeatText.textContent = `Restam ${speech.remaining} de ${speech.target}`;
+}
+
+function renderPresentText(text) {
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  const isList = lines.length >= 5;
+  presentText.classList.toggle('list-mode', isList);
+
+  if (isList) {
+    presentText.innerHTML = lines.map((line) => `<div class="present-line">${escapeHtml(line)}</div>`).join('');
+  } else {
+    presentText.textContent = text;
+  }
+
+  const sliderValue = Number(document.querySelector('#fontRange').value || 40);
+  const maxSize = window.innerWidth <= 460 ? 46 : 60;
+  applyPresentFontSize(Math.min(sliderValue, maxSize));
+}
+
+function applyPresentFontSize(size) {
+  presentText.style.fontSize = `${size}px`;
+  fitListText();
+}
+
+function fitListText() {
+  if (!presentText.classList.contains('list-mode')) return;
+
+  const minSize = 18;
+  let size = Number.parseFloat(presentText.style.fontSize) || 40;
+  const lines = [...presentText.querySelectorAll('.present-line')];
+  if (!lines.length) return;
+
+  while (size > minSize && lines.some((line) => line.scrollWidth > presentText.clientWidth)) {
+    size -= 1;
+    presentText.style.fontSize = `${size}px`;
+  }
 }
 
 function renderEditList() {

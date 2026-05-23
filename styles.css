@@ -369,6 +369,16 @@ textarea {
   align-items: center;
 }
 
+.present-text.list-mode {
+  display: block;
+  align-items: initial;
+  line-height: 1.18;
+}
+
+.present-line {
+  white-space: nowrap;
+}
+
 .presenter-controls {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
