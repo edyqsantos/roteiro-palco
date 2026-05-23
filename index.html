@@ -28,6 +28,10 @@
       </nav>
 
       <section class="view active" id="homeView">
+        <button class="route-selector" id="routeSelectorBtn" type="button">
+          <span>Roteiro</span>
+          <strong id="currentRouteName">Roteiro Principal</strong>
+        </button>
         <div class="topic-grid" id="topicGrid"></div>
       </section>
 
@@ -57,6 +61,9 @@
 
       <section class="view" id="editView">
         <div class="edit-tools">
+          <button class="primary-button" id="newRouteBtn" type="button">Novo roteiro</button>
+          <button class="secondary-button" id="duplicateRouteBtn" type="button">Duplicar roteiro</button>
+          <button class="secondary-button" id="renameRouteBtn" type="button">Renomear roteiro</button>
           <button class="primary-button" id="addTopicBtn" type="button">+ Botão</button>
           <button class="secondary-button" id="addSpeechBtn" type="button">+ Fala</button>
           <button class="secondary-button" id="renameTopicBtn" type="button">Renomear botão</button>
@@ -150,6 +157,30 @@
         <div class="reorder-list" id="reorderList"></div>
         <div class="dialog-actions">
           <button class="primary-button" value="default" type="submit">Fechar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="routeDialog">
+      <form method="dialog" class="dialog-form">
+        <h2>Abrir roteiro</h2>
+        <div class="route-list" id="routeList"></div>
+        <div class="dialog-actions">
+          <button class="primary-button" value="default" type="submit">Fechar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="routeNameDialog">
+      <form method="dialog" class="dialog-form">
+        <h2 id="routeNameTitle">Novo roteiro</h2>
+        <label>
+          Nome do roteiro
+          <input id="routeNameInput" type="text" maxlength="40" />
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
+          <button class="primary-button" id="saveRouteNameBtn" value="default" type="submit">Salvar</button>
         </div>
       </form>
     </dialog>

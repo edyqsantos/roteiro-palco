@@ -106,9 +106,10 @@ const defaultSpeeches = [
 ];
 
 let state = loadState();
-let activeTopic = state.topics[0] || 'Informes';
+let activeTopic = currentRoute().topics[0] || 'Informes';
 let currentIndex = 0;
 let editingIndex = null;
+let routeNameMode = 'new';
 
 const views = {
   home: document.querySelector('#homeView'),
@@ -139,6 +140,12 @@ const backupText = document.querySelector('#backupText');
 const reorderList = document.querySelector('#reorderList');
 const offlineStatus = document.querySelector('#offlineStatus');
 const restorePointStatus = document.querySelector('#restorePointStatus');
+const currentRouteName = document.querySelector('#currentRouteName');
+const routeDialog = document.querySelector('#routeDialog');
+const routeList = document.querySelector('#routeList');
+const routeNameDialog = document.querySelector('#routeNameDialog');
+const routeNameTitle = document.querySelector('#routeNameTitle');
+const routeNameInput = document.querySelector('#routeNameInput');
 
 document.querySelectorAll('.tab').forEach((tab) => {
   tab.addEventListener('click', () => setView(tab.dataset.view));
@@ -149,6 +156,10 @@ document.querySelectorAll('[data-view-button]').forEach((button) => {
 });
 
 document.querySelector('#homeBtn').addEventListener('click', () => setView('home'));
+document.querySelector('#routeSelectorBtn').addEventListener('click', openRouteDialog);
+document.querySelector('#newRouteBtn').addEventListener('click', () => openRouteNameDialog('new'));
+document.querySelector('#duplicateRouteBtn').addEventListener('click', duplicateCurrentRoute);
+document.querySelector('#renameRouteBtn').addEventListener('click', () => openRouteNameDialog('rename'));
 document.querySelector('#addTopicBtn').addEventListener('click', openTopicDialog);
 document.querySelector('#renameTopicBtn').addEventListener('click', () => {
   const topic = topicFilter.value === 'todos' ? activeTopic : topicFilter.value;
@@ -189,6 +200,11 @@ document.querySelector('#saveRenameTopicBtn').addEventListener('click', (event) 
   saveRenameTopicFromDialog();
 });
 
+document.querySelector('#saveRouteNameBtn').addEventListener('click', (event) => {
+  event.preventDefault();
+  saveRouteNameFromDialog();
+});
+
 function loadState() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -198,32 +214,71 @@ function loadState() {
   }
 
   return normalizeState({
-    topics: defaultTopics,
-    speeches: defaultSpeeches,
+    routes: [
+      {
+        id: createId(),
+        name: 'Roteiro Principal',
+        topics: defaultTopics,
+        speeches: defaultSpeeches,
+      },
+    ],
   });
 }
 
 function normalizeState(nextState) {
   const normalizeTopicName = (topic) => (topic === 'Agradecimentos' ? 'Agradecer' : topic);
-  const topics = [
-    ...new Set([...(nextState.topics || defaultTopics), ...((nextState.speeches || []).map((speech) => speech.topic))].map(normalizeTopicName)),
-  ];
-  const speeches = (nextState.speeches || defaultSpeeches).map((speech) => {
-    const target = Math.max(1, Number(speech.target || 1));
-    const remaining = Math.min(target, Math.max(0, Number(speech.remaining ?? target)));
-    return {
-      topic: normalizeTopicName(speech.topic || topics[0] || 'Informes'),
-      text: speech.text || '',
-      target,
-      remaining,
-    };
-  });
 
-  return { topics, speeches };
+  const normalizeRoute = (route, index = 0) => {
+    const baseSpeeches = route.speeches || defaultSpeeches;
+    const topics = [...new Set([...(route.topics || defaultTopics), ...baseSpeeches.map((speech) => speech.topic)].map(normalizeTopicName))];
+    const speeches = baseSpeeches.map((speech) => {
+      const target = Math.max(1, Number(speech.target || 1));
+      const remaining = Math.min(target, Math.max(0, Number(speech.remaining ?? target)));
+      return {
+        topic: normalizeTopicName(speech.topic || topics[0] || 'Informes'),
+        text: speech.text || '',
+        target,
+        remaining,
+      };
+    });
+
+    return {
+      id: route.id || createId(),
+      name: route.name || `Roteiro ${index + 1}`,
+      topics,
+      speeches,
+    };
+  };
+
+  let routes = [];
+  if (Array.isArray(nextState.routes)) {
+    routes = nextState.routes.map(normalizeRoute);
+  } else {
+    routes = [
+      normalizeRoute({
+        id: createId(),
+        name: 'Roteiro Principal',
+        topics: nextState.topics || defaultTopics,
+        speeches: nextState.speeches || defaultSpeeches,
+      }),
+    ];
+  }
+
+  const activeRouteId = routes.some((route) => route.id === nextState.activeRouteId) ? nextState.activeRouteId : routes[0].id;
+  return { activeRouteId, routes };
 }
 
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function currentRoute() {
+  let route = state.routes.find((item) => item.id === state.activeRouteId);
+  if (!route) {
+    route = state.routes[0];
+    state.activeRouteId = route.id;
+  }
+  return route;
 }
 
 function setView(name) {
@@ -246,6 +301,7 @@ function openTopic(topic) {
 }
 
 function render() {
+  currentRouteName.textContent = currentRoute().name;
   renderTopicOptions();
   renderHome();
   renderPresenter();
@@ -254,19 +310,20 @@ function render() {
 }
 
 function renderTopicOptions() {
+  const route = currentRoute();
   const selectedFilter = topicFilter.value || 'todos';
-  const selectedEditTopic = editTopic.value || activeTopic || state.topics[0];
-  const options = state.topics.map((topic) => `<option value="${escapeHtml(topic)}">${escapeHtml(topic)}</option>`).join('');
+  const selectedEditTopic = editTopic.value || activeTopic || route.topics[0];
+  const options = route.topics.map((topic) => `<option value="${escapeHtml(topic)}">${escapeHtml(topic)}</option>`).join('');
   editTopic.innerHTML = options;
   renameTopicFrom.innerHTML = options;
   topicFilter.innerHTML = `<option value="todos">Todos os tópicos</option>${options}`;
-  editTopic.value = state.topics.includes(selectedEditTopic) ? selectedEditTopic : state.topics[0];
-  renameTopicFrom.value = state.topics.includes(activeTopic) ? activeTopic : state.topics[0];
-  topicFilter.value = selectedFilter === 'todos' || state.topics.includes(selectedFilter) ? selectedFilter : 'todos';
+  editTopic.value = route.topics.includes(selectedEditTopic) ? selectedEditTopic : route.topics[0];
+  renameTopicFrom.value = route.topics.includes(activeTopic) ? activeTopic : route.topics[0];
+  topicFilter.value = selectedFilter === 'todos' || route.topics.includes(selectedFilter) ? selectedFilter : 'todos';
 }
 
 function renderHome() {
-  topicGrid.innerHTML = state.topics
+  topicGrid.innerHTML = currentRoute().topics
     .map((topic) => {
       const speeches = getSpeechesByTopic(topic);
       const remaining = speeches.reduce((sum, speech) => sum + speech.remaining, 0);
@@ -308,7 +365,7 @@ function renderPresenter() {
 
 function renderEditList() {
   const selected = topicFilter.value || 'todos';
-  const visible = state.speeches
+  const visible = currentRoute().speeches
     .map((speech, index) => ({ ...speech, index }))
     .filter((speech) => selected === 'todos' || speech.topic === selected);
 
@@ -339,7 +396,7 @@ function renderEditList() {
 
   scriptList.querySelectorAll('[data-present]').forEach((button) => {
     button.addEventListener('click', () => {
-      const speech = state.speeches[Number(button.dataset.present)];
+      const speech = currentRoute().speeches[Number(button.dataset.present)];
       activeTopic = speech.topic;
       currentIndex = getSpeechesByTopic(activeTopic).findIndex((item) => item === speech);
       setView('present');
@@ -352,7 +409,7 @@ function renderEditList() {
 
   scriptList.querySelectorAll('[data-reset]').forEach((button) => {
     button.addEventListener('click', () => {
-      const speech = state.speeches[Number(button.dataset.reset)];
+      const speech = currentRoute().speeches[Number(button.dataset.reset)];
       speech.remaining = speech.target;
       saveAndRender();
     });
@@ -372,8 +429,8 @@ function openSpeechDialog(index = null) {
   dialogTitle.textContent = index === null ? 'Nova fala' : 'Editar fala';
   renderTopicOptions();
 
-  const speech = index === null ? null : state.speeches[index];
-  editTopic.value = speech?.topic || activeTopic || state.topics[0];
+  const speech = index === null ? null : currentRoute().speeches[index];
+  editTopic.value = speech?.topic || activeTopic || currentRoute().topics[0];
   editTarget.value = speech?.target || 1;
   editText.value = speech?.text || '';
   speechDialog.showModal();
@@ -381,7 +438,7 @@ function openSpeechDialog(index = null) {
 
 function editCurrentSpeech() {
   const speech = getSpeechesByTopic(activeTopic)[currentIndex];
-  const globalIndex = state.speeches.indexOf(speech);
+  const globalIndex = currentRoute().speeches.indexOf(speech);
   if (globalIndex >= 0) openSpeechDialog(globalIndex);
 }
 
@@ -390,8 +447,9 @@ function saveSpeechFromDialog() {
   if (!text) return;
 
   const target = clamp(Number(editTarget.value || 1), 1, 20);
-  const topic = editTopic.value || state.topics[0];
-  const previous = editingIndex === null ? null : state.speeches[editingIndex];
+  const route = currentRoute();
+  const topic = editTopic.value || route.topics[0];
+  const previous = editingIndex === null ? null : route.speeches[editingIndex];
   const spoken = previous ? previous.target - previous.remaining : 0;
   const nextSpeech = {
     topic,
@@ -401,12 +459,12 @@ function saveSpeechFromDialog() {
   };
 
   if (editingIndex === null) {
-    state.speeches.push(nextSpeech);
+    route.speeches.push(nextSpeech);
   } else {
-    state.speeches[editingIndex] = nextSpeech;
+    route.speeches[editingIndex] = nextSpeech;
   }
 
-  if (!state.topics.includes(topic)) state.topics.push(topic);
+  if (!route.topics.includes(topic)) route.topics.push(topic);
   activeTopic = topic;
   speechDialog.close();
   saveAndRender();
@@ -421,7 +479,8 @@ function saveTopicFromDialog() {
   const topic = newTopicName.value.trim();
   if (!topic) return;
 
-  if (!state.topics.includes(topic)) state.topics.push(topic);
+  const route = currentRoute();
+  if (!route.topics.includes(topic)) route.topics.push(topic);
   activeTopic = topic;
   topicDialog.close();
   saveAndRender();
@@ -440,9 +499,10 @@ function saveRenameTopicFromDialog() {
   const newTopic = renameTopicTo.value.trim();
   if (!oldTopic || !newTopic) return;
 
-  state.topics = state.topics.map((topic) => (topic === oldTopic ? newTopic : topic));
-  state.topics = [...new Set(state.topics)];
-  state.speeches.forEach((speech) => {
+  const route = currentRoute();
+  route.topics = route.topics.map((topic) => (topic === oldTopic ? newTopic : topic));
+  route.topics = [...new Set(route.topics)];
+  route.speeches.forEach((speech) => {
     if (speech.topic === oldTopic) speech.topic = newTopic;
   });
   activeTopic = newTopic;
@@ -451,13 +511,14 @@ function saveRenameTopicFromDialog() {
 }
 
 function deleteSpeech(index) {
-  const speech = state.speeches[index];
+  const route = currentRoute();
+  const speech = route.speeches[index];
   if (!speech) return;
 
   const shouldDelete = confirm('EXCLUIR ESTA FALA?');
   if (!shouldDelete) return;
 
-  state.speeches.splice(index, 1);
+  route.speeches.splice(index, 1);
   currentIndex = 0;
   saveAndRender();
 }
@@ -468,7 +529,7 @@ function openReorderDialog() {
 }
 
 function renderReorderList() {
-  reorderList.innerHTML = state.topics
+  reorderList.innerHTML = currentRoute().topics
     .map(
       (topic, index) => `
         <div class="reorder-item">
@@ -493,14 +554,123 @@ function renderReorderList() {
 
 function moveTopic(index, direction) {
   const nextIndex = index + direction;
-  if (nextIndex < 0 || nextIndex >= state.topics.length) return;
+  const route = currentRoute();
+  if (nextIndex < 0 || nextIndex >= route.topics.length) return;
 
-  const moved = state.topics[index];
-  state.topics[index] = state.topics[nextIndex];
-  state.topics[nextIndex] = moved;
+  const moved = route.topics[index];
+  route.topics[index] = route.topics[nextIndex];
+  route.topics[nextIndex] = moved;
   saveState();
   render();
   renderReorderList();
+}
+
+function openRouteDialog() {
+  renderRouteList();
+  routeDialog.showModal();
+}
+
+function renderRouteList() {
+  routeList.innerHTML = state.routes
+    .map(
+      (route) => `
+        <div class="route-item">
+          <strong>${escapeHtml(route.name)}</strong>
+          <div>
+            <button class="secondary-button" type="button" data-open-route="${route.id}">Abrir</button>
+            <button class="secondary-button" type="button" data-delete-route="${route.id}">Excluir</button>
+          </div>
+        </div>
+      `,
+    )
+    .join('');
+
+  routeList.querySelectorAll('[data-open-route]').forEach((button) => {
+    button.addEventListener('click', () => openRoute(button.dataset.openRoute));
+  });
+
+  routeList.querySelectorAll('[data-delete-route]').forEach((button) => {
+    button.addEventListener('click', () => deleteRoute(button.dataset.deleteRoute));
+  });
+}
+
+function openRoute(routeId) {
+  const route = state.routes.find((item) => item.id === routeId);
+  if (!route) return;
+
+  state.activeRouteId = route.id;
+  activeTopic = route.topics[0] || 'Informes';
+  currentIndex = 0;
+  routeDialog.close();
+  saveAndRender();
+  setView('home');
+}
+
+function openRouteNameDialog(mode) {
+  routeNameMode = mode;
+  routeNameTitle.textContent = mode === 'rename' ? 'Renomear roteiro' : 'Novo roteiro';
+  routeNameInput.value = mode === 'rename' ? currentRoute().name : '';
+  routeNameDialog.showModal();
+}
+
+function saveRouteNameFromDialog() {
+  const name = routeNameInput.value.trim();
+  if (!name) return;
+
+  if (routeNameMode === 'rename') {
+    currentRoute().name = name;
+  } else {
+    const route = {
+      id: createId(),
+      name,
+      topics: [...defaultTopics],
+      speeches: [],
+    };
+    state.routes.push(route);
+    state.activeRouteId = route.id;
+    activeTopic = route.topics[0] || 'Informes';
+  }
+
+  routeNameDialog.close();
+  saveAndRender();
+  setView('home');
+}
+
+function duplicateCurrentRoute() {
+  const source = currentRoute();
+  const route = {
+    id: createId(),
+    name: `${source.name} - Cópia`,
+    topics: [...source.topics],
+    speeches: source.speeches.map((speech) => ({ ...speech })),
+  };
+  state.routes.push(route);
+  state.activeRouteId = route.id;
+  activeTopic = route.topics[0] || 'Informes';
+  saveAndRender();
+  setView('home');
+}
+
+function deleteRoute(routeId) {
+  if (state.routes.length <= 1) {
+    alert('MANTENHA PELO MENOS UM ROTEIRO.');
+    return;
+  }
+
+  const route = state.routes.find((item) => item.id === routeId);
+  if (!route) return;
+
+  const shouldDelete = confirm(`EXCLUIR O ROTEIRO "${route.name}"?`);
+  if (!shouldDelete) return;
+
+  state.routes = state.routes.filter((item) => item.id !== routeId);
+  if (state.activeRouteId === routeId) {
+    state.activeRouteId = state.routes[0].id;
+    activeTopic = state.routes[0].topics[0] || 'Informes';
+  }
+
+  saveAndRender();
+  renderRouteList();
 }
 
 function exportBackup() {
@@ -543,7 +713,7 @@ function importBackup() {
     const parsed = JSON.parse(raw);
     const nextState = parsed.data ? parsed.data : parsed;
     state = normalizeState(nextState);
-    activeTopic = state.topics[0] || 'Informes';
+    activeTopic = currentRoute().topics[0] || 'Informes';
     currentIndex = 0;
     saveAndRender();
     setView('home');
@@ -576,7 +746,7 @@ function restoreSavedPoint() {
   try {
     const parsed = JSON.parse(stored);
     state = normalizeState(parsed.data);
-    activeTopic = state.topics[0] || 'Informes';
+    activeTopic = currentRoute().topics[0] || 'Informes';
     currentIndex = 0;
     saveAndRender();
     setView('home');
@@ -626,15 +796,21 @@ function focusFirstAvailableInTopic() {
 }
 
 function getSpeechesByTopic(topic) {
-  return state.speeches.filter((speech) => speech.topic === topic);
+  return currentRoute().speeches.filter((speech) => speech.topic === topic);
 }
 
 function resetDefault() {
   state = normalizeState({
-    topics: defaultTopics,
-    speeches: defaultSpeeches.map((speech) => ({ ...speech })),
+    routes: [
+      {
+        id: createId(),
+        name: 'Roteiro Principal',
+        topics: defaultTopics,
+        speeches: defaultSpeeches.map((speech) => ({ ...speech })),
+      },
+    ],
   });
-  activeTopic = state.topics[0];
+  activeTopic = currentRoute().topics[0];
   currentIndex = 0;
   saveAndRender();
 }
@@ -655,6 +831,10 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function createId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 render();

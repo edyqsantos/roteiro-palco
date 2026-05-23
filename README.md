@@ -10,3 +10,5 @@ Para Railway, defina as variáveis:
 - `APP_PASSWORD`: senha de acesso
 
 O app não pede PIN local. Para desfazer mudanças feitas durante o evento, use "Transferir roteiro" > "Salvar ponto" antes de começar e "Restaurar ponto" quando precisar voltar.
+
+Também é possível manter vários roteiros no mesmo evento, por exemplo "Antes do 1º Show", "Antes do 2º Show" e "Encerramento".

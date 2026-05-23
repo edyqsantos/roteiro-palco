@@ -200,6 +200,29 @@ textarea {
   margin-top: 12px;
 }
 
+.route-selector {
+  width: 100%;
+  min-height: 72px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #171b20;
+  color: var(--text);
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.route-selector span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.route-selector strong {
+  font-size: 1.25rem;
+}
+
 .topic-button {
   width: 100%;
   min-height: 92px;
@@ -436,12 +459,14 @@ dialog::backdrop {
   gap: 8px;
 }
 
-.reorder-list {
+.reorder-list,
+.route-list {
   display: grid;
   gap: 8px;
 }
 
-.reorder-item {
+.reorder-item,
+.route-item {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
@@ -452,11 +477,13 @@ dialog::backdrop {
   padding: 10px;
 }
 
-.reorder-item strong {
+.reorder-item strong,
+.route-item strong {
   text-transform: uppercase;
 }
 
-.reorder-item div {
+.reorder-item div,
+.route-item div {
   display: flex;
   gap: 6px;
 }
@@ -500,11 +527,13 @@ dialog::backdrop {
     grid-template-columns: 1fr;
   }
 
-  .reorder-item {
+  .reorder-item,
+  .route-item {
     grid-template-columns: 1fr;
   }
 
-  .reorder-item div {
+  .reorder-item div,
+  .route-item div {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
