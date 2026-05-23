@@ -853,14 +853,9 @@ function registerOfflineApp() {
       offlineStatus.textContent = 'Preparando offline...';
       await registration.update();
       await navigator.serviceWorker.ready;
-      const cache = await caches.open('palco-offline-v6');
-      const cachedFiles = await Promise.all([
-        cache.match('./index.html'),
-        cache.match('./styles.css'),
-        cache.match('./app.js'),
-        cache.match('./manifest.json'),
-        cache.match('./service-worker.js'),
-      ]);
+      const cache = await caches.open('palco-offline-v7');
+      const shellUrls = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js'].map((file) => new URL(file, window.location.href).href);
+      const cachedFiles = await Promise.all(shellUrls.map((url) => cache.match(url)));
 
       if (cachedFiles.every(Boolean)) {
         offlineStatus.textContent = 'Offline pronto';

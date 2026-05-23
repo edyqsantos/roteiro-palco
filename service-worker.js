@@ -1,4 +1,4 @@
-const CACHE_NAME = 'palco-offline-v6';
+const CACHE_NAME = 'palco-offline-v7';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,7 +10,19 @@ const APP_SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)),
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        APP_SHELL.map(async (url) => {
+          const request = new Request(url, {
+            cache: 'reload',
+            credentials: 'include',
+          });
+          const response = await fetch(request);
+          if (!response.ok) throw new Error(`Falha ao guardar ${url}`);
+          await cache.put(request, response);
+        }),
+      ),
+    ),
   );
   self.skipWaiting();
 });
@@ -33,11 +45,13 @@ self.addEventListener('fetch', (event) => {
 
       return fetch(event.request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
           return response;
         })
-        .catch(() => caches.match('./index.html'));
+        .catch(() => caches.match('./index.html').then((fallback) => fallback || caches.match('./')));
     }),
   );
 });
