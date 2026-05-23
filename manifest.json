@@ -1,5 +1,5 @@
 {
-  "name": "Roteiro de Palco",
+  "name": "Palco",
   "short_name": "Palco",
   "description": "App pessoal para locução de palco com roteiro offline.",
   "start_url": "./index.html",
