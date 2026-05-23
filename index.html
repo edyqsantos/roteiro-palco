@@ -66,6 +66,7 @@
           <button class="secondary-button" id="renameRouteBtn" type="button">Renomear roteiro</button>
           <button class="primary-button" id="addTopicBtn" type="button">+ Botão</button>
           <button class="secondary-button" id="addSpeechBtn" type="button">+ Fala</button>
+          <button class="secondary-button" id="topicModeBtn" type="button">Modo do botão</button>
           <button class="secondary-button" id="renameTopicBtn" type="button">Renomear botão</button>
           <button class="secondary-button" id="reorderTopicsBtn" type="button">Reordenar Home</button>
           <button class="secondary-button" data-view-button="transfer" type="button">Transferir roteiro</button>
@@ -129,6 +130,27 @@
         <div class="dialog-actions">
           <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
           <button class="primary-button" id="saveTopicBtn" value="default" type="submit">Criar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="topicModeDialog">
+      <form method="dialog" class="dialog-form">
+        <h2>Modo do botão</h2>
+        <label>
+          Botão
+          <select id="topicModeName"></select>
+        </label>
+        <label>
+          Modo
+          <select id="topicModeValue">
+            <option value="normal">Normal</option>
+            <option value="sponsor">Patrocinadores</option>
+          </select>
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
+          <button class="primary-button" id="saveTopicModeBtn" value="default" type="submit">Salvar</button>
         </div>
       </form>
     </dialog>

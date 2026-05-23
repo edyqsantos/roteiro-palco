@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v9';
+const OFFLINE_CACHE_NAME = 'palco-offline-v10';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -129,6 +129,7 @@ const presentText = document.querySelector('#presentText');
 const repeatText = document.querySelector('#repeatText');
 const speechDialog = document.querySelector('#speechDialog');
 const topicDialog = document.querySelector('#topicDialog');
+const topicModeDialog = document.querySelector('#topicModeDialog');
 const renameTopicDialog = document.querySelector('#renameTopicDialog');
 const reorderDialog = document.querySelector('#reorderDialog');
 const editTopic = document.querySelector('#editTopic');
@@ -136,6 +137,8 @@ const editTarget = document.querySelector('#editTarget');
 const editText = document.querySelector('#editText');
 const dialogTitle = document.querySelector('#dialogTitle');
 const newTopicName = document.querySelector('#newTopicName');
+const topicModeName = document.querySelector('#topicModeName');
+const topicModeValue = document.querySelector('#topicModeValue');
 const renameTopicFrom = document.querySelector('#renameTopicFrom');
 const renameTopicTo = document.querySelector('#renameTopicTo');
 const backupText = document.querySelector('#backupText');
@@ -163,6 +166,7 @@ document.querySelector('#newRouteBtn').addEventListener('click', () => openRoute
 document.querySelector('#duplicateRouteBtn').addEventListener('click', duplicateCurrentRoute);
 document.querySelector('#renameRouteBtn').addEventListener('click', () => openRouteNameDialog('rename'));
 document.querySelector('#addTopicBtn').addEventListener('click', openTopicDialog);
+document.querySelector('#topicModeBtn').addEventListener('click', openTopicModeDialog);
 document.querySelector('#renameTopicBtn').addEventListener('click', () => {
   const topic = topicFilter.value === 'todos' ? activeTopic : topicFilter.value;
   openRenameTopicDialog(topic);
@@ -195,6 +199,14 @@ document.querySelector('#saveSpeechBtn').addEventListener('click', (event) => {
 document.querySelector('#saveTopicBtn').addEventListener('click', (event) => {
   event.preventDefault();
   saveTopicFromDialog();
+});
+
+document.querySelector('#saveTopicModeBtn').addEventListener('click', (event) => {
+  event.preventDefault();
+  saveTopicModeFromDialog();
+});
+topicModeName.addEventListener('change', () => {
+  topicModeValue.value = currentRoute().topicModes?.[topicModeName.value] || 'normal';
 });
 
 document.querySelector('#saveRenameTopicBtn').addEventListener('click', (event) => {
@@ -249,6 +261,7 @@ function normalizeState(nextState) {
       name: route.name || `Roteiro ${index + 1}`,
       topics,
       speeches,
+      topicModes: route.topicModes || {},
     };
   };
 
@@ -317,9 +330,11 @@ function renderTopicOptions() {
   const selectedEditTopic = editTopic.value || activeTopic || route.topics[0];
   const options = route.topics.map((topic) => `<option value="${escapeHtml(topic)}">${escapeHtml(topic)}</option>`).join('');
   editTopic.innerHTML = options;
+  topicModeName.innerHTML = options;
   renameTopicFrom.innerHTML = options;
   topicFilter.innerHTML = `<option value="todos">Todos os tópicos</option>${options}`;
   editTopic.value = route.topics.includes(selectedEditTopic) ? selectedEditTopic : route.topics[0];
+  topicModeName.value = route.topics.includes(activeTopic) ? activeTopic : route.topics[0];
   renameTopicFrom.value = route.topics.includes(activeTopic) ? activeTopic : route.topics[0];
   topicFilter.value = selectedFilter === 'todos' || route.topics.includes(selectedFilter) ? selectedFilter : 'todos';
 }
@@ -366,9 +381,15 @@ function renderPresenter() {
 }
 
 function renderPresentText(text) {
+  if (currentRoute().topicModes?.[activeTopic] === 'sponsor') {
+    renderSponsorText(text);
+    return;
+  }
+
   const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
   const isList = lines.length >= 5;
   presentText.classList.toggle('list-mode', isList);
+  presentText.classList.remove('sponsor-mode');
 
   if (isList) {
     presentText.innerHTML = lines.map((line) => `<div class="present-line">${escapeHtml(line)}</div>`).join('');
@@ -384,6 +405,30 @@ function renderPresentText(text) {
 function applyPresentFontSize(size) {
   presentText.style.fontSize = `${size}px`;
   fitListText();
+}
+
+function renderSponsorText(text) {
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  presentText.classList.remove('list-mode');
+  presentText.classList.add('sponsor-mode');
+  presentText.innerHTML = `<div class="sponsor-list">${lines.map(renderSponsorLine).join('')}</div>`;
+
+  const sliderValue = Number(document.querySelector('#fontRange').value || 40);
+  const maxSize = window.innerWidth <= 460 ? 42 : 54;
+  applyPresentFontSize(Math.min(sliderValue, maxSize));
+}
+
+function renderSponsorLine(line) {
+  const commaIndex = line.indexOf(',');
+  const name = commaIndex >= 0 ? line.slice(0, commaIndex).trim() : line;
+  const copy = commaIndex >= 0 ? line.slice(commaIndex + 1).trim() : '';
+
+  return `
+    <div class="sponsor-item">
+      <div class="sponsor-name">${escapeHtml(name)}</div>
+      ${copy ? `<div class="sponsor-copy">${escapeHtml(copy)}</div>` : ''}
+    </div>
+  `;
 }
 
 function fitListText() {
@@ -518,8 +563,33 @@ function saveTopicFromDialog() {
 
   const route = currentRoute();
   if (!route.topics.includes(topic)) route.topics.push(topic);
+  route.topicModes ||= {};
   activeTopic = topic;
   topicDialog.close();
+  saveAndRender();
+}
+
+function openTopicModeDialog() {
+  renderTopicOptions();
+  topicModeName.value = currentRoute().topics.includes(activeTopic) ? activeTopic : currentRoute().topics[0];
+  topicModeValue.value = currentRoute().topicModes?.[topicModeName.value] || 'normal';
+  topicModeDialog.showModal();
+}
+
+function saveTopicModeFromDialog() {
+  const route = currentRoute();
+  const topic = topicModeName.value;
+  const mode = topicModeValue.value;
+  route.topicModes ||= {};
+
+  if (mode === 'normal') {
+    delete route.topicModes[topic];
+  } else {
+    route.topicModes[topic] = mode;
+  }
+
+  activeTopic = topic;
+  topicModeDialog.close();
   saveAndRender();
 }
 
@@ -539,6 +609,11 @@ function saveRenameTopicFromDialog() {
   const route = currentRoute();
   route.topics = route.topics.map((topic) => (topic === oldTopic ? newTopic : topic));
   route.topics = [...new Set(route.topics)];
+  route.topicModes ||= {};
+  if (route.topicModes[oldTopic]) {
+    route.topicModes[newTopic] = route.topicModes[oldTopic];
+    delete route.topicModes[oldTopic];
+  }
   route.speeches.forEach((speech) => {
     if (speech.topic === oldTopic) speech.topic = newTopic;
   });
@@ -662,6 +737,7 @@ function saveRouteNameFromDialog() {
       name,
       topics: [...defaultTopics],
       speeches: [],
+      topicModes: {},
     };
     state.routes.push(route);
     state.activeRouteId = route.id;
@@ -680,6 +756,7 @@ function duplicateCurrentRoute() {
     name: `${source.name} - Cópia`,
     topics: [...source.topics],
     speeches: source.speeches.map((speech) => ({ ...speech })),
+    topicModes: { ...(source.topicModes || {}) },
   };
   state.routes.push(route);
   state.activeRouteId = route.id;
@@ -844,6 +921,7 @@ function resetDefault() {
         name: 'Roteiro Principal',
         topics: defaultTopics,
         speeches: defaultSpeeches.map((speech) => ({ ...speech })),
+        topicModes: {},
       },
     ],
   });

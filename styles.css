@@ -379,6 +379,28 @@ textarea {
   white-space: nowrap;
 }
 
+.sponsor-list {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+}
+
+.sponsor-item {
+  display: grid;
+  gap: 4px;
+}
+
+.sponsor-name {
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.sponsor-copy {
+  color: var(--muted);
+  font-size: 0.58em;
+  line-height: 1.18;
+}
+
 .presenter-controls {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
