@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v12';
+const OFFLINE_CACHE_NAME = 'palco-offline-v13';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -143,6 +143,7 @@ const topicModeValue = document.querySelector('#topicModeValue');
 const renameTopicFrom = document.querySelector('#renameTopicFrom');
 const renameTopicTo = document.querySelector('#renameTopicTo');
 const backupText = document.querySelector('#backupText');
+const backupScope = document.querySelector('#backupScope');
 const reorderList = document.querySelector('#reorderList');
 const offlineStatus = document.querySelector('#offlineStatus');
 const restorePointStatus = document.querySelector('#restorePointStatus');
@@ -812,11 +813,14 @@ function deleteRoute(routeId) {
 }
 
 function exportBackup() {
+  const scope = backupScope.value || 'current';
+  const isCurrentOnly = scope === 'current';
   const payload = {
     app: 'roteiro-palco',
     version: 1,
+    scope,
     exportedAt: new Date().toISOString(),
-    data: state,
+    data: isCurrentOnly ? { route: currentRoute() } : state,
   };
   backupText.value = JSON.stringify(payload, null, 2);
 }
@@ -850,7 +854,13 @@ function importBackup() {
   try {
     const parsed = JSON.parse(raw);
     const nextState = parsed.data ? parsed.data : parsed;
-    state = normalizeState(nextState);
+
+    if (nextState.route) {
+      importSingleRoute(nextState.route);
+    } else {
+      state = normalizeState(nextState);
+    }
+
     activeTopic = currentRoute().topics[0] || 'Informes';
     currentIndex = 0;
     saveAndRender();
@@ -859,6 +869,27 @@ function importBackup() {
   } catch {
     alert('NÃO CONSEGUI IMPORTAR. CONFIRA SE O BACKUP FOI COLADO INTEIRO.');
   }
+}
+
+function importSingleRoute(routeData) {
+  const importedRoute = normalizeState({ routes: [routeData] }).routes[0];
+  const sameNameIndex = state.routes.findIndex((route) => route.name === importedRoute.name);
+
+  if (sameNameIndex >= 0) {
+    const replace = confirm(`JÁ EXISTE UM ROTEIRO CHAMADO "${importedRoute.name}". SUBSTITUIR?`);
+    if (replace) {
+      importedRoute.id = state.routes[sameNameIndex].id;
+      state.routes[sameNameIndex] = importedRoute;
+      state.activeRouteId = importedRoute.id;
+      return;
+    }
+
+    importedRoute.id = createId();
+    importedRoute.name = `${importedRoute.name} - Importado`;
+  }
+
+  state.routes.push(importedRoute);
+  state.activeRouteId = importedRoute.id;
 }
 
 function saveRestorePoint() {

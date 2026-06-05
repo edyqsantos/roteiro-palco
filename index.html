@@ -97,6 +97,13 @@
             <button class="secondary-button" id="restorePointBtn" type="button">Restaurar ponto</button>
           </div>
           <p class="backup-status" id="restorePointStatus">Nenhum ponto salvo neste aparelho.</p>
+          <label>
+            Tipo de backup
+            <select id="backupScope">
+              <option value="current">Apenas roteiro atual</option>
+              <option value="all">Todos os roteiros</option>
+            </select>
+          </label>
           <div class="transfer-actions">
             <button class="primary-button" id="exportBtn" type="button">Gerar backup</button>
             <button class="secondary-button" id="copyBackupBtn" type="button">Copiar</button>
