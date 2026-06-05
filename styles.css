@@ -223,6 +223,25 @@ textarea {
   font-size: 1.25rem;
 }
 
+.compact-route-selector {
+  min-height: 58px;
+}
+
+.compact-route-selector strong {
+  font-size: 1rem;
+}
+
+.present-route {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
 .topic-button {
   width: 100%;
   min-height: 92px;
@@ -335,6 +354,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   color: var(--accent-strong);
   font-weight: 700;
 }
@@ -409,6 +429,37 @@ textarea {
 
 .previous-control {
   grid-column: 1 / -1;
+}
+
+.text-highlight {
+  font-size: 1.08em;
+  font-weight: 900;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.color-choice {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-strong);
+  color: var(--text);
+  font-weight: 800;
+}
+
+.color-choice::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--swatch);
+  vertical-align: -1px;
 }
 
 .repeat-line {

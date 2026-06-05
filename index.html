@@ -37,7 +37,7 @@
       <section class="view presenter" id="presentView">
         <div class="presenter-card">
           <div class="presenter-meta">
-            <button class="home-link" id="homeBtn" type="button">← Home</button>
+            <div class="present-route" id="presentRouteName">Roteiro Principal</div>
             <span id="presentCounter">1/1</span>
           </div>
           <div class="presenter-topic" id="presentTopic">Informes</div>
@@ -50,6 +50,7 @@
             <button class="primary-button" id="doneBtn" type="button">Falei</button>
             <button class="secondary-button" id="nextBtn" type="button">Próximo</button>
             <button class="secondary-button previous-control" id="prevBtn" type="button">Anterior</button>
+            <button class="secondary-button previous-control" id="homeBtn" type="button">Home</button>
           </div>
           <label class="speed-control">
             Tamanho do texto
@@ -59,10 +60,15 @@
       </section>
 
       <section class="view" id="editView">
+        <button class="route-selector compact-route-selector" data-open-routes type="button">
+          <span>Roteiro</span>
+          <strong data-current-route-label>Roteiro Principal</strong>
+        </button>
         <div class="edit-tools">
           <button class="primary-button" id="newRouteBtn" type="button">Novo roteiro</button>
           <button class="secondary-button" id="duplicateRouteBtn" type="button">Duplicar roteiro</button>
           <button class="secondary-button" id="renameRouteBtn" type="button">Renomear roteiro</button>
+          <button class="secondary-button" id="routeColorBtn" type="button">Cor do roteiro</button>
           <button class="primary-button" id="addTopicBtn" type="button">+ Botão</button>
           <button class="secondary-button" id="addSpeechBtn" type="button">+ Fala</button>
           <button class="secondary-button" id="topicModeBtn" type="button">Modo do botão</button>
@@ -79,6 +85,10 @@
       </section>
 
       <section class="view" id="transferView">
+        <button class="route-selector compact-route-selector" data-open-routes type="button">
+          <span>Roteiro</span>
+          <strong data-current-route-label>Roteiro Principal</strong>
+        </button>
         <div class="transfer-panel">
           <h2>Backup do roteiro</h2>
           <p>Salve um ponto de restauração antes do evento. Se precisar desfazer alterações feitas no palco, restaure esse ponto.</p>
@@ -202,6 +212,23 @@
         <div class="dialog-actions">
           <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
           <button class="primary-button" id="saveRouteNameBtn" value="default" type="submit">Salvar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="routeColorDialog">
+      <form method="dialog" class="dialog-form">
+        <h2>Cor do roteiro</h2>
+        <div class="color-grid">
+          <button class="color-choice" type="button" data-route-color="#f4f2ec" style="--swatch: #f4f2ec">Branco</button>
+          <button class="color-choice" type="button" data-route-color="#f4c95d" style="--swatch: #f4c95d">Amarelo</button>
+          <button class="color-choice" type="button" data-route-color="#78d39b" style="--swatch: #78d39b">Verde</button>
+          <button class="color-choice" type="button" data-route-color="#80c7ff" style="--swatch: #80c7ff">Azul</button>
+          <button class="color-choice" type="button" data-route-color="#ff9f9f" style="--swatch: #ff9f9f">Vermelho</button>
+        </div>
+        <p class="status">Use em EDITAR para destacar visualmente o roteiro atual em todas as telas.</p>
+        <div class="dialog-actions">
+          <button class="primary-button" value="default" type="submit">Fechar</button>
         </div>
       </form>
     </dialog>

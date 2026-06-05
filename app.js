@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v11';
+const OFFLINE_CACHE_NAME = 'palco-offline-v12';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -124,6 +124,7 @@ const topicGrid = document.querySelector('#topicGrid');
 const scriptList = document.querySelector('#scriptList');
 const topicFilter = document.querySelector('#topicFilter');
 const presentTopic = document.querySelector('#presentTopic');
+const presentRouteName = document.querySelector('#presentRouteName');
 const presentCounter = document.querySelector('#presentCounter');
 const presentText = document.querySelector('#presentText');
 const repeatText = document.querySelector('#repeatText');
@@ -151,6 +152,7 @@ const routeList = document.querySelector('#routeList');
 const routeNameDialog = document.querySelector('#routeNameDialog');
 const routeNameTitle = document.querySelector('#routeNameTitle');
 const routeNameInput = document.querySelector('#routeNameInput');
+const routeColorDialog = document.querySelector('#routeColorDialog');
 
 document.querySelectorAll('.tab').forEach((tab) => {
   tab.addEventListener('click', () => setView(tab.dataset.view));
@@ -162,9 +164,13 @@ document.querySelectorAll('[data-view-button]').forEach((button) => {
 
 document.querySelector('#homeBtn').addEventListener('click', () => setView('home'));
 document.querySelector('#routeSelectorBtn').addEventListener('click', openRouteDialog);
+document.querySelectorAll('[data-open-routes]').forEach((button) => {
+  button.addEventListener('click', openRouteDialog);
+});
 document.querySelector('#newRouteBtn').addEventListener('click', () => openRouteNameDialog('new'));
 document.querySelector('#duplicateRouteBtn').addEventListener('click', duplicateCurrentRoute);
 document.querySelector('#renameRouteBtn').addEventListener('click', () => openRouteNameDialog('rename'));
+document.querySelector('#routeColorBtn').addEventListener('click', () => routeColorDialog.showModal());
 document.querySelector('#addTopicBtn').addEventListener('click', openTopicDialog);
 document.querySelector('#topicModeBtn').addEventListener('click', openTopicModeDialog);
 document.querySelector('#renameTopicBtn').addEventListener('click', () => {
@@ -218,6 +224,14 @@ document.querySelector('#saveRouteNameBtn').addEventListener('click', (event) =>
   saveRouteNameFromDialog();
 });
 
+document.querySelectorAll('[data-route-color]').forEach((button) => {
+  button.addEventListener('click', () => {
+    currentRoute().color = button.dataset.routeColor;
+    routeColorDialog.close();
+    saveAndRender();
+  });
+});
+
 function loadState() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -258,6 +272,7 @@ function normalizeState(nextState) {
     return {
       id: route.id || createId(),
       name: route.name || `Roteiro ${index + 1}`,
+      color: route.color || '#f4f2ec',
       topics,
       speeches,
       topicModes: route.topicModes || {},
@@ -315,7 +330,15 @@ function openTopic(topic) {
 }
 
 function render() {
-  currentRouteName.textContent = currentRoute().name;
+  const route = currentRoute();
+  currentRouteName.textContent = route.name;
+  currentRouteName.style.color = route.color || '';
+  document.querySelectorAll('[data-current-route-label]').forEach((label) => {
+    label.textContent = route.name;
+    label.style.color = route.color || '';
+  });
+  presentRouteName.textContent = route.name;
+  presentRouteName.style.color = route.color || '';
   renderTopicOptions();
   renderHome();
   renderPresenter();
@@ -391,9 +414,9 @@ function renderPresentText(text) {
   presentText.classList.remove('sponsor-mode');
 
   if (isList) {
-    presentText.innerHTML = lines.map((line) => `<div class="present-line">${escapeHtml(line)}</div>`).join('');
+    presentText.innerHTML = lines.map((line) => `<div class="present-line">${formatHighlights(line)}</div>`).join('');
   } else {
-    presentText.textContent = text;
+    presentText.innerHTML = formatHighlights(text).replaceAll('\n', '<br>');
   }
 
   const sliderValue = Number(document.querySelector('#fontRange').value || 40);
@@ -424,8 +447,8 @@ function renderSponsorLine(line) {
 
   return `
     <div class="sponsor-item">
-      <div class="sponsor-name">${escapeHtml(name)}</div>
-      ${copy ? `<div class="sponsor-copy">${escapeHtml(copy)}</div>` : ''}
+      <div class="sponsor-name">${formatHighlights(name)}</div>
+      ${copy ? `<div class="sponsor-copy">${formatHighlights(copy)}</div>` : ''}
     </div>
   `;
 }
@@ -734,6 +757,7 @@ function saveRouteNameFromDialog() {
     const route = {
       id: createId(),
       name,
+      color: currentRoute().color || '#f4f2ec',
       topics: [...defaultTopics],
       speeches: [],
       topicModes: {},
@@ -753,6 +777,7 @@ function duplicateCurrentRoute() {
   const route = {
     id: createId(),
     name: `${source.name} - Cópia`,
+    color: source.color || '#f4f2ec',
     topics: [...source.topics],
     speeches: source.speeches.map((speech) => ({ ...speech })),
     topicModes: { ...(source.topicModes || {}) },
@@ -918,6 +943,7 @@ function resetDefault() {
       {
         id: createId(),
         name: 'Roteiro Principal',
+        color: '#f4f2ec',
         topics: defaultTopics,
         speeches: defaultSpeeches.map((speech) => ({ ...speech })),
         topicModes: {},
@@ -945,6 +971,20 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function formatHighlights(value) {
+  const colors = {
+    amarelo: '#f4c95d',
+    azul: '#80c7ff',
+    verde: '#78d39b',
+    vermelho: '#ff9f9f',
+  };
+
+  return escapeHtml(value).replace(/\[\[(?:(amarelo|azul|verde|vermelho):)?(.+?)\]\]/gi, (_, colorName, text) => {
+    const color = colors[(colorName || 'amarelo').toLowerCase()] || colors.amarelo;
+    return `<span class="text-highlight" style="color: ${color}">${text}</span>`;
+  });
 }
 
 function createId() {
