@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v13';
+const OFFLINE_CACHE_NAME = 'palco-offline-v14';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -413,6 +413,7 @@ function renderPresentText(text) {
   const isList = lines.length >= 5;
   presentText.classList.toggle('list-mode', isList);
   presentText.classList.remove('sponsor-mode');
+  presentText.classList.toggle('rich-mode', text.includes('[['));
 
   if (isList) {
     presentText.innerHTML = lines.map((line) => `<div class="present-line">${formatHighlights(line)}</div>`).join('');
@@ -433,6 +434,7 @@ function applyPresentFontSize(size) {
 function renderSponsorText(text) {
   const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
   presentText.classList.remove('list-mode');
+  presentText.classList.remove('rich-mode');
   presentText.classList.add('sponsor-mode');
   presentText.innerHTML = `<div class="sponsor-list">${lines.map(renderSponsorLine).join('')}</div>`;
 

@@ -395,6 +395,11 @@ textarea {
   line-height: 1.18;
 }
 
+.present-text.rich-mode {
+  display: block;
+  align-items: initial;
+}
+
 .present-line {
   white-space: nowrap;
 }
