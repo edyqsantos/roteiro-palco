@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v15';
+const OFFLINE_CACHE_NAME = 'palco-offline-v16';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -188,6 +188,9 @@ document.querySelector('#fontRange').addEventListener('input', (event) => {
   const maxSize = window.innerWidth <= 460 ? 46 : 60;
   const size = Math.min(Number(event.target.value), maxSize);
   applyPresentFontSize(size);
+});
+document.querySelectorAll('[data-highlight-color]').forEach((button) => {
+  button.addEventListener('click', () => applyHighlightToSelection(button.dataset.highlightColor));
 });
 document.querySelector('#exportBtn').addEventListener('click', exportBackup);
 document.querySelector('#copyBackupBtn').addEventListener('click', copyBackup);
@@ -423,7 +426,7 @@ function renderPresentText(text) {
     presentText.innerHTML = rawLines.map((line) => (line.trim() ? formatHighlights(line) : '&nbsp;')).join('<br>');
   }
 
-  const sliderValue = Number(document.querySelector('#fontRange').value || 40);
+  const sliderValue = Number(document.querySelector('#fontRange').value || 28);
   const maxSize = window.innerWidth <= 460 ? 46 : 60;
   applyPresentFontSize(Math.min(sliderValue, maxSize));
 }
@@ -433,6 +436,19 @@ function applyPresentFontSize(size) {
   fitListText();
 }
 
+function applyHighlightToSelection(color) {
+  const start = editText.selectionStart;
+  const end = editText.selectionEnd;
+  const selectedText = editText.value.slice(start, end);
+  const highlightText = selectedText || 'texto';
+  const marker = `[[${color}:${highlightText}]]`;
+
+  editText.setRangeText(marker, start, end, 'select');
+  const textStart = start + color.length + 3;
+  editText.focus();
+  editText.setSelectionRange(textStart, textStart + highlightText.length);
+}
+
 function renderSponsorText(text) {
   const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
   presentText.classList.remove('list-mode');
@@ -440,7 +456,7 @@ function renderSponsorText(text) {
   presentText.classList.add('sponsor-mode');
   presentText.innerHTML = `<div class="sponsor-list">${lines.map(renderSponsorLine).join('')}</div>`;
 
-  const sliderValue = Number(document.querySelector('#fontRange').value || 40);
+  const sliderValue = Number(document.querySelector('#fontRange').value || 28);
   const maxSize = window.innerWidth <= 460 ? 42 : 54;
   applyPresentFontSize(Math.min(sliderValue, maxSize));
 }

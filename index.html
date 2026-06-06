@@ -54,7 +54,7 @@
           </div>
           <label class="speed-control">
             Tamanho do texto
-            <input id="fontRange" type="range" min="28" max="60" value="40" />
+            <input id="fontRange" type="range" min="28" max="60" value="28" />
           </label>
         </div>
       </section>
@@ -129,6 +129,24 @@
           Texto
           <textarea id="editText" rows="7"></textarea>
         </label>
+        <div class="highlight-tools" aria-label="Destacar trecho selecionado">
+          <button class="highlight-button" type="button" data-highlight-color="verde" title="Destacar em verde">
+            <span style="--swatch: #78d39b"></span>
+            Verde
+          </button>
+          <button class="highlight-button" type="button" data-highlight-color="azul" title="Destacar em azul">
+            <span style="--swatch: #80c7ff"></span>
+            Azul
+          </button>
+          <button class="highlight-button" type="button" data-highlight-color="vermelho" title="Destacar em vermelho">
+            <span style="--swatch: #ff9f9f"></span>
+            Vermelho
+          </button>
+          <button class="highlight-button" type="button" data-highlight-color="amarelo" title="Destacar em amarelo">
+            <span style="--swatch: #f4c95d"></span>
+            Amarelo
+          </button>
+        </div>
         <div class="dialog-actions">
           <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
           <button class="primary-button" id="saveSpeechBtn" value="default" type="submit">Salvar</button>
