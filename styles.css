@@ -504,7 +504,7 @@ textarea {
 
 .highlight-tools {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
 }
 
@@ -529,6 +529,10 @@ textarea {
   border-radius: 50%;
   background: var(--swatch);
   flex: 0 0 auto;
+}
+
+.plain-highlight {
+  color: var(--muted);
 }
 
 .repeat-line {
@@ -692,5 +696,9 @@ dialog::backdrop {
 
   .present-text {
     font-size: 28px;
+  }
+
+  .highlight-tools {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

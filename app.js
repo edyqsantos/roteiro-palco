@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v19';
+const OFFLINE_CACHE_NAME = 'palco-offline-v20';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -195,6 +195,11 @@ document.querySelectorAll('[data-highlight-color]').forEach((button) => {
   button.addEventListener('pointerdown', (event) => event.preventDefault());
   button.addEventListener('touchstart', (event) => event.preventDefault(), { passive: false });
   button.addEventListener('click', () => applyHighlightToSelection(button.dataset.highlightColor));
+});
+document.querySelectorAll('[data-highlight-clear]').forEach((button) => {
+  button.addEventListener('pointerdown', (event) => event.preventDefault());
+  button.addEventListener('touchstart', (event) => event.preventDefault(), { passive: false });
+  button.addEventListener('click', clearHighlightSelection);
 });
 document.querySelector('#exportBtn').addEventListener('click', exportBackup);
 document.querySelector('#copyBackupBtn').addEventListener('click', copyBackup);
@@ -469,14 +474,75 @@ function applyHighlightToSelection(color) {
   const span = createEditorHighlight(color);
   if (range.collapsed) {
     span.textContent = 'texto';
+    range.insertNode(span);
+    editVisual.focus();
+    selectNodeContents(span);
   } else {
     span.append(range.extractContents());
+    range.insertNode(span);
+    editVisual.focus();
+    placeCaretAfter(span);
+  }
+  savedEditorRange = null;
+}
+
+function clearHighlightSelection() {
+  const range = getEditorRange();
+  if (!range) {
+    editVisual.focus();
+    return;
   }
 
-  range.insertNode(span);
+  const targets = getHighlightsInRange(range);
+  if (!targets.length) {
+    const highlight = closestHighlight(range.startContainer);
+    if (highlight) targets.push(highlight);
+  }
+
+  if (!targets.length) return;
+
+  const selectionRange = document.createRange();
+  selectionRange.setStartBefore(targets[0]);
+  selectionRange.setEndAfter(targets[targets.length - 1]);
+  targets.forEach(unwrapElement);
   editVisual.focus();
-  selectNodeContents(span);
   savedEditorRange = null;
+  selectRange(selectionRange);
+}
+
+function getEditorRange() {
+  const selection = window.getSelection();
+  const activeRange = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+  const range =
+    activeRange && editVisual.contains(activeRange.commonAncestorContainer)
+      ? activeRange.cloneRange()
+      : savedEditorRange?.cloneRange();
+
+  if (!range || !editVisual.contains(range.commonAncestorContainer)) return null;
+  return range;
+}
+
+function getHighlightsInRange(range) {
+  return [...editVisual.querySelectorAll('[data-highlight-color]')].filter((node) => rangeIntersectsNode(range, node));
+}
+
+function rangeIntersectsNode(range, node) {
+  try {
+    return range.intersectsNode(node);
+  } catch {
+    return false;
+  }
+}
+
+function closestHighlight(node) {
+  const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  return element?.closest?.('[data-highlight-color]');
+}
+
+function unwrapElement(element) {
+  const fragment = document.createDocumentFragment();
+  while (element.firstChild) fragment.append(element.firstChild);
+  element.replaceWith(fragment);
 }
 
 function renderSponsorText(text) {
@@ -1113,6 +1179,17 @@ function insertHighlightNode(color, text) {
 function selectNodeContents(node) {
   const range = document.createRange();
   range.selectNodeContents(node);
+  selectRange(range);
+}
+
+function placeCaretAfter(node) {
+  const range = document.createRange();
+  range.setStartAfter(node);
+  range.collapse(true);
+  selectRange(range);
+}
+
+function selectRange(range) {
   const selection = window.getSelection();
   selection.removeAllRanges();
   selection.addRange(range);
