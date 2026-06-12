@@ -425,8 +425,13 @@ textarea {
 }
 
 .present-line {
+  display: block;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.present-gap {
+  height: 0.42em;
 }
 
 .present-text.sponsor-mode {
@@ -686,6 +691,6 @@ dialog::backdrop {
   }
 
   .present-text {
-    font-size: 32px;
+    font-size: 28px;
   }
 }

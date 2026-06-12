@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v18';
+const OFFLINE_CACHE_NAME = 'palco-offline-v19';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -425,11 +425,7 @@ function renderPresentText(text) {
   presentText.classList.remove('sponsor-mode');
   presentText.classList.toggle('rich-mode', text.includes('[['));
 
-  if (isList) {
-    presentText.innerHTML = lines.map((line) => `<div class="present-line">${formatHighlights(line)}</div>`).join('');
-  } else {
-    presentText.innerHTML = rawLines.map((line) => (line.trim() ? formatHighlights(line) : '&nbsp;')).join('<br>');
-  }
+  presentText.innerHTML = rawLines.map(renderPresentLine).join('');
 
   const sliderValue = Number(document.querySelector('#fontRange').value || 28);
   const maxSize = window.innerWidth <= 460 ? 46 : 60;
@@ -439,6 +435,11 @@ function renderPresentText(text) {
 function applyPresentFontSize(size) {
   presentText.style.fontSize = `${size}px`;
   fitListText();
+}
+
+function renderPresentLine(line) {
+  if (!line.trim()) return '<div class="present-gap" aria-hidden="true"></div>';
+  return `<div class="present-line">${formatHighlights(line)}</div>`;
 }
 
 function rememberEditorSelection() {
@@ -1058,12 +1059,21 @@ function escapeHtml(value) {
 }
 
 function markupToEditorHtml(value) {
-  const html = formatHighlights(value).replace(/\n/g, '<br>');
-  return html || '<br>';
+  const lines = String(value || '').split('\n');
+  return lines.map((line) => `<div>${line ? formatHighlights(line) : '<br>'}</div>`).join('') || '<div><br></div>';
 }
 
 function editorHtmlToMarkup(root) {
-  return collectEditorMarkup(root).replace(/\u00a0/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  const nodes = [...root.childNodes].filter((node) => node.nodeType !== Node.TEXT_NODE || node.nodeValue.trim());
+  const hasOnlyBlocks =
+    nodes.length > 0 &&
+    nodes.every((node) => node.nodeType === Node.ELEMENT_NODE && ['DIV', 'P'].includes(node.nodeName));
+
+  const markup = hasOnlyBlocks
+    ? nodes.map((node) => collectChildrenMarkup(node).replace(/\n+$/g, '')).join('\n')
+    : collectEditorMarkup(root);
+
+  return markup.replace(/\u00a0/g, ' ').replace(/\n{4,}/g, '\n\n\n').trim();
 }
 
 function collectEditorMarkup(node) {
