@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v16';
+const OFFLINE_CACHE_NAME = 'palco-offline-v17';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -136,6 +136,7 @@ const reorderDialog = document.querySelector('#reorderDialog');
 const editTopic = document.querySelector('#editTopic');
 const editTarget = document.querySelector('#editTarget');
 const editText = document.querySelector('#editText');
+const editVisual = document.querySelector('#editVisual');
 const dialogTitle = document.querySelector('#dialogTitle');
 const newTopicName = document.querySelector('#newTopicName');
 const topicModeName = document.querySelector('#topicModeName');
@@ -437,16 +438,25 @@ function applyPresentFontSize(size) {
 }
 
 function applyHighlightToSelection(color) {
-  const start = editText.selectionStart;
-  const end = editText.selectionEnd;
-  const selectedText = editText.value.slice(start, end);
-  const highlightText = selectedText || 'texto';
-  const marker = `[[${color}:${highlightText}]]`;
+  const selection = window.getSelection();
+  const range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
 
-  editText.setRangeText(marker, start, end, 'select');
-  const textStart = start + color.length + 3;
-  editText.focus();
-  editText.setSelectionRange(textStart, textStart + highlightText.length);
+  if (!range || !editVisual.contains(range.commonAncestorContainer)) {
+    editVisual.focus();
+    insertHighlightNode(color, 'texto');
+    return;
+  }
+
+  const span = createEditorHighlight(color);
+  if (range.collapsed) {
+    span.textContent = 'texto';
+  } else {
+    span.append(range.extractContents());
+  }
+
+  range.insertNode(span);
+  editVisual.focus();
+  selectNodeContents(span);
 }
 
 function renderSponsorText(text) {
@@ -555,9 +565,11 @@ function openSpeechDialog(index = null) {
   renderTopicOptions();
 
   const speech = index === null ? null : currentRoute().speeches[index];
+  const text = speech?.text || '';
   editTopic.value = speech?.topic || activeTopic || currentRoute().topics[0];
   editTarget.value = speech?.target || 1;
-  editText.value = speech?.text || '';
+  editText.value = text;
+  editVisual.innerHTML = markupToEditorHtml(text);
   speechDialog.showModal();
 }
 
@@ -568,6 +580,7 @@ function editCurrentSpeech() {
 }
 
 function saveSpeechFromDialog() {
+  editText.value = editorHtmlToMarkup(editVisual);
   const text = editText.value.trim();
   if (!text) return;
 
@@ -1024,18 +1037,74 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
+function markupToEditorHtml(value) {
+  const html = formatHighlights(value).replace(/\n/g, '<br>');
+  return html || '<br>';
+}
+
+function editorHtmlToMarkup(root) {
+  return collectEditorMarkup(root).replace(/\u00a0/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function collectEditorMarkup(node) {
+  if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+  if (node.nodeName === 'BR') return '\n';
+  if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+  const element = node;
+  const color = element.dataset?.highlightColor;
+  if (color) return `[[${color}:${collectChildrenMarkup(element)}]]`;
+
+  const content = collectChildrenMarkup(element);
+  if (element !== editVisual && ['DIV', 'P'].includes(element.nodeName)) return `${content}\n`;
+  return content;
+}
+
+function collectChildrenMarkup(element) {
+  return [...element.childNodes].map(collectEditorMarkup).join('');
+}
+
+function createEditorHighlight(color) {
+  const span = document.createElement('span');
+  const colors = highlightColors();
+  span.className = 'text-highlight';
+  span.dataset.highlightColor = color;
+  span.style.color = colors[color] || colors.amarelo;
+  return span;
+}
+
+function insertHighlightNode(color, text) {
+  const span = createEditorHighlight(color);
+  span.textContent = text;
+  editVisual.append(span);
+  selectNodeContents(span);
+}
+
+function selectNodeContents(node) {
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
 function formatHighlights(value) {
-  const colors = {
+  const colors = highlightColors();
+
+  return escapeHtml(value).replace(/\[\[(?:(amarelo|azul|verde|vermelho):)?(.+?)\]\]/gi, (_, colorName, text) => {
+    const normalizedColor = (colorName || 'amarelo').toLowerCase();
+    const color = colors[normalizedColor] || colors.amarelo;
+    return `<span class="text-highlight" data-highlight-color="${normalizedColor}" style="color: ${color}">${text}</span>`;
+  });
+}
+
+function highlightColors() {
+  return {
     amarelo: '#f4c95d',
     azul: '#80c7ff',
     verde: '#78d39b',
     vermelho: '#ff9f9f',
   };
-
-  return escapeHtml(value).replace(/\[\[(?:(amarelo|azul|verde|vermelho):)?(.+?)\]\]/gi, (_, colorName, text) => {
-    const color = colors[(colorName || 'amarelo').toLowerCase()] || colors.amarelo;
-    return `<span class="text-highlight" style="color: ${color}">${text}</span>`;
-  });
 }
 
 function createId() {

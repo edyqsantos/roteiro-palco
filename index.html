@@ -127,7 +127,8 @@
         </label>
         <label>
           Texto
-          <textarea id="editText" rows="7"></textarea>
+          <div id="editVisual" class="visual-editor" contenteditable="true" role="textbox" aria-multiline="true"></div>
+          <textarea id="editText" class="raw-editor" rows="7"></textarea>
         </label>
         <div class="highlight-tools" aria-label="Destacar trecho selecionado">
           <button class="highlight-button" type="button" data-highlight-color="verde" title="Destacar em verde">
