@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v20';
+const OFFLINE_CACHE_NAME = 'palco-offline-v21';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -192,14 +192,24 @@ document.querySelector('#fontRange').addEventListener('input', (event) => {
   applyPresentFontSize(size);
 });
 document.querySelectorAll('[data-highlight-color]').forEach((button) => {
-  button.addEventListener('pointerdown', (event) => event.preventDefault());
-  button.addEventListener('touchstart', (event) => event.preventDefault(), { passive: false });
-  button.addEventListener('click', () => applyHighlightToSelection(button.dataset.highlightColor));
+  button.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    applyHighlightToSelection(button.dataset.highlightColor);
+  });
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    if (event.detail === 0) applyHighlightToSelection(button.dataset.highlightColor);
+  });
 });
 document.querySelectorAll('[data-highlight-clear]').forEach((button) => {
-  button.addEventListener('pointerdown', (event) => event.preventDefault());
-  button.addEventListener('touchstart', (event) => event.preventDefault(), { passive: false });
-  button.addEventListener('click', clearHighlightSelection);
+  button.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    clearHighlightSelection();
+  });
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    if (event.detail === 0) clearHighlightSelection();
+  });
 });
 document.querySelector('#exportBtn').addEventListener('click', exportBackup);
 document.querySelector('#copyBackupBtn').addEventListener('click', copyBackup);

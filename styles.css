@@ -504,8 +504,8 @@ textarea {
 
 .highlight-tools {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .highlight-button {
@@ -519,8 +519,9 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 0 8px;
+  gap: 5px;
+  padding: 0 6px;
+  white-space: nowrap;
 }
 
 .highlight-button span {
@@ -699,6 +700,19 @@ dialog::backdrop {
   }
 
   .highlight-tools {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .highlight-button {
+    min-height: 44px;
+    font-size: 0.7rem;
+    gap: 4px;
+    padding: 0 4px;
+  }
+
+  .highlight-button span {
+    width: 10px;
+    height: 10px;
   }
 }
