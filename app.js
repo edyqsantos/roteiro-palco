@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v17';
+const OFFLINE_CACHE_NAME = 'palco-offline-v18';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -112,6 +112,7 @@ let activeTopic = currentRoute().topics[0] || 'Informes';
 let currentIndex = 0;
 let editingIndex = null;
 let routeNameMode = 'new';
+let savedEditorRange = null;
 
 const views = {
   home: document.querySelector('#homeView'),
@@ -191,6 +192,8 @@ document.querySelector('#fontRange').addEventListener('input', (event) => {
   applyPresentFontSize(size);
 });
 document.querySelectorAll('[data-highlight-color]').forEach((button) => {
+  button.addEventListener('pointerdown', (event) => event.preventDefault());
+  button.addEventListener('touchstart', (event) => event.preventDefault(), { passive: false });
   button.addEventListener('click', () => applyHighlightToSelection(button.dataset.highlightColor));
 });
 document.querySelector('#exportBtn').addEventListener('click', exportBackup);
@@ -200,6 +203,7 @@ document.querySelector('#saveRestorePointBtn').addEventListener('click', saveRes
 document.querySelector('#restorePointBtn').addEventListener('click', restoreSavedPoint);
 
 topicFilter.addEventListener('change', renderEditList);
+document.addEventListener('selectionchange', rememberEditorSelection);
 
 document.querySelector('#saveSpeechBtn').addEventListener('click', (event) => {
   event.preventDefault();
@@ -437,9 +441,23 @@ function applyPresentFontSize(size) {
   fitListText();
 }
 
+function rememberEditorSelection() {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return;
+
+  const range = selection.getRangeAt(0);
+  if (editVisual.contains(range.commonAncestorContainer)) {
+    savedEditorRange = range.cloneRange();
+  }
+}
+
 function applyHighlightToSelection(color) {
   const selection = window.getSelection();
-  const range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+  const activeRange = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+  const range =
+    activeRange && editVisual.contains(activeRange.commonAncestorContainer)
+      ? activeRange.cloneRange()
+      : savedEditorRange?.cloneRange();
 
   if (!range || !editVisual.contains(range.commonAncestorContainer)) {
     editVisual.focus();
@@ -457,6 +475,7 @@ function applyHighlightToSelection(color) {
   range.insertNode(span);
   editVisual.focus();
   selectNodeContents(span);
+  savedEditorRange = null;
 }
 
 function renderSponsorText(text) {
@@ -570,6 +589,7 @@ function openSpeechDialog(index = null) {
   editTarget.value = speech?.target || 1;
   editText.value = text;
   editVisual.innerHTML = markupToEditorHtml(text);
+  savedEditorRange = null;
   speechDialog.showModal();
 }
 
