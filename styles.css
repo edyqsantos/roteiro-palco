@@ -404,13 +404,16 @@ textarea {
 
 .present-text {
   flex: 1;
-  white-space: pre-wrap;
-  overflow-wrap: normal;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
   word-break: normal;
   line-height: 1.28;
   font-size: 28px;
-  display: flex;
-  align-items: center;
+  display: block;
+  align-items: initial;
 }
 
 .present-text.list-mode {
@@ -427,7 +430,8 @@ textarea {
 .present-line {
   display: block;
   white-space: normal;
-  overflow-wrap: normal;
+  max-width: 100%;
+  overflow-wrap: break-word;
   word-break: normal;
 }
 
@@ -476,7 +480,7 @@ textarea {
   font-size: 1.08em;
   font-weight: 900;
   display: inline;
-  overflow-wrap: normal;
+  overflow-wrap: break-word;
   word-break: normal;
 }
 
