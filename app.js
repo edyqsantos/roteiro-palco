@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v21';
+const OFFLINE_CACHE_NAME = 'palco-offline-v22';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -581,10 +581,10 @@ function renderSponsorLine(line) {
 }
 
 function fitListText() {
-  if (!presentText.classList.contains('list-mode')) return;
+  if (!presentText.classList.contains('list-mode') && !presentText.classList.contains('rich-mode')) return;
 
   const minSize = 18;
-  let size = Number.parseFloat(presentText.style.fontSize) || 40;
+  let size = Number.parseFloat(presentText.style.fontSize) || 28;
   const lines = [...presentText.querySelectorAll('.present-line')];
   if (!lines.length) return;
 

@@ -405,8 +405,8 @@ textarea {
 .present-text {
   flex: 1;
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: normal;
+  word-break: normal;
   line-height: 1.28;
   font-size: 28px;
   display: flex;
@@ -427,7 +427,8 @@ textarea {
 .present-line {
   display: block;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .present-gap {
@@ -474,6 +475,9 @@ textarea {
 .text-highlight {
   font-size: 1.08em;
   font-weight: 900;
+  display: inline;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .color-grid {
