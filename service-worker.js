@@ -1,4 +1,4 @@
-const CACHE_NAME = 'palco-offline-v23';
+const CACHE_NAME = 'palco-offline-v24';
 const APP_SHELL = [
   './',
   './index.html',

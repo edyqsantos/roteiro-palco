@@ -161,6 +161,7 @@ h2 {
 select,
 textarea,
 input[type='text'],
+input[type='password'],
 input[type='number'] {
   width: 100%;
   border: 1px solid var(--line);
@@ -175,6 +176,7 @@ select {
 }
 
 input[type='text'],
+input[type='password'],
 input[type='number'] {
   min-height: 48px;
   padding: 0 12px;

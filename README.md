@@ -8,6 +8,8 @@ Para Railway, defina as variáveis:
 
 - `APP_USER`: usuário de acesso
 - `APP_PASSWORD`: senha de acesso
+- `DATABASE_URL`: banco Postgres do Railway para sincronização na nuvem
+- `SYNC_TOKEN`: código simples exigido no app para enviar/buscar roteiros na nuvem
 
 O app não pede PIN local. Para desfazer mudanças feitas durante o evento, use "Transferir roteiro" > "Salvar ponto" antes de começar e "Restaurar ponto" quando precisar voltar.
 

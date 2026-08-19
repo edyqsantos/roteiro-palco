@@ -111,6 +111,19 @@
           <textarea id="backupText" rows="8" placeholder="O backup do roteiro aparece aqui."></textarea>
           <button class="primary-button full" id="importBackupBtn" type="button">Importar backup colado</button>
         </div>
+        <div class="transfer-panel">
+          <h2>Sincronização na nuvem</h2>
+          <p>Use quando tiver internet. O roteiro continua salvo neste aparelho para funcionar offline.</p>
+          <label>
+            Código de sincronização
+            <input id="syncTokenInput" type="password" autocomplete="off" placeholder="Digite uma vez neste aparelho" />
+          </label>
+          <div class="transfer-actions">
+            <button class="primary-button" id="pushCloudBtn" type="button">Enviar para nuvem</button>
+            <button class="secondary-button" id="pullCloudBtn" type="button">Buscar da nuvem</button>
+          </div>
+          <p class="backup-status" id="cloudStatus">Nuvem ainda não sincronizada neste aparelho.</p>
+        </div>
       </section>
     </main>
 

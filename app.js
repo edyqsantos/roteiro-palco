@@ -1,6 +1,8 @@
 const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
-const OFFLINE_CACHE_NAME = 'palco-offline-v23';
+const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
+const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
+const OFFLINE_CACHE_NAME = 'palco-offline-v24';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -146,6 +148,8 @@ const renameTopicFrom = document.querySelector('#renameTopicFrom');
 const renameTopicTo = document.querySelector('#renameTopicTo');
 const backupText = document.querySelector('#backupText');
 const backupScope = document.querySelector('#backupScope');
+const syncTokenInput = document.querySelector('#syncTokenInput');
+const cloudStatus = document.querySelector('#cloudStatus');
 const reorderList = document.querySelector('#reorderList');
 const offlineStatus = document.querySelector('#offlineStatus');
 const restorePointStatus = document.querySelector('#restorePointStatus');
@@ -216,8 +220,11 @@ document.querySelector('#copyBackupBtn').addEventListener('click', copyBackup);
 document.querySelector('#importBackupBtn').addEventListener('click', importBackup);
 document.querySelector('#saveRestorePointBtn').addEventListener('click', saveRestorePoint);
 document.querySelector('#restorePointBtn').addEventListener('click', restoreSavedPoint);
+document.querySelector('#pushCloudBtn').addEventListener('click', pushCloudState);
+document.querySelector('#pullCloudBtn').addEventListener('click', pullCloudState);
 
 topicFilter.addEventListener('change', renderEditList);
+syncTokenInput.addEventListener('input', saveSyncToken);
 document.addEventListener('selectionchange', rememberEditorSelection);
 
 document.querySelector('#saveSpeechBtn').addEventListener('click', (event) => {
@@ -1069,6 +1076,105 @@ function renderRestorePointStatus() {
   }
 }
 
+function saveSyncToken() {
+  const token = syncTokenInput.value.trim();
+  if (token) {
+    localStorage.setItem(CLOUD_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(CLOUD_TOKEN_KEY);
+  }
+}
+
+function loadSyncToken() {
+  syncTokenInput.value = localStorage.getItem(CLOUD_TOKEN_KEY) || '';
+}
+
+function renderCloudStatus(message = null) {
+  if (message) {
+    cloudStatus.textContent = message;
+    return;
+  }
+
+  const stored = localStorage.getItem(CLOUD_SYNC_KEY);
+  if (!stored) {
+    cloudStatus.textContent = 'Nuvem ainda não sincronizada neste aparelho.';
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(stored);
+    const date = new Date(parsed.syncedAt);
+    cloudStatus.textContent = `${parsed.direction} em ${date.toLocaleString('pt-BR')}.`;
+  } catch {
+    cloudStatus.textContent = 'Existe um histórico de nuvem, mas ele não pôde ser lido.';
+  }
+}
+
+async function pushCloudState() {
+  const token = syncTokenInput.value.trim();
+  renderCloudStatus('Enviando para a nuvem...');
+
+  try {
+    const response = await fetch('./api/sync', {
+      method: 'PUT',
+      headers: buildSyncHeaders(token),
+      body: JSON.stringify({ state }),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) throw new Error(result.error || 'Não consegui enviar para a nuvem.');
+    saveCloudSync('Enviado para a nuvem', result.updatedAt);
+    renderCloudStatus();
+    alert('ROTEIRO ENVIADO PARA A NUVEM.');
+  } catch (error) {
+    renderCloudStatus(error.message || 'Não consegui enviar para a nuvem.');
+  }
+}
+
+async function pullCloudState() {
+  const shouldPull = confirm('BUSCAR DA NUVEM? O ROTEIRO DESTE APARELHO SERÁ SUBSTITUÍDO PELO QUE ESTÁ NA NUVEM.');
+  if (!shouldPull) return;
+
+  const token = syncTokenInput.value.trim();
+  renderCloudStatus('Buscando da nuvem...');
+
+  try {
+    const response = await fetch('./api/sync', {
+      method: 'GET',
+      headers: buildSyncHeaders(token),
+    });
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) throw new Error(result.error || 'Não consegui buscar da nuvem.');
+    state = normalizeState(result.state);
+    activeTopic = currentRoute().topics[0] || 'Informes';
+    currentIndex = 0;
+    saveAndRender();
+    saveCloudSync('Buscado da nuvem', result.updatedAt);
+    renderCloudStatus();
+    setView('home');
+    alert('ROTEIRO BUSCADO DA NUVEM.');
+  } catch (error) {
+    renderCloudStatus(error.message || 'Não consegui buscar da nuvem.');
+  }
+}
+
+function buildSyncHeaders(token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['X-Sync-Token'] = token;
+  return headers;
+}
+
+function saveCloudSync(direction, serverDate = null) {
+  localStorage.setItem(
+    CLOUD_SYNC_KEY,
+    JSON.stringify({
+      direction,
+      syncedAt: serverDate || new Date().toISOString(),
+    }),
+  );
+}
+
 function movePresenter(direction) {
   const speeches = getSpeechesByTopic(activeTopic);
   if (!speeches.length) return;
@@ -1228,6 +1334,8 @@ function createId() {
 
 render();
 renderRestorePointStatus();
+loadSyncToken();
+renderCloudStatus();
 registerOfflineApp();
 
 function registerOfflineApp() {
