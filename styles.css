@@ -547,6 +547,8 @@ textarea {
   background: #0e1012;
   border-radius: 8px;
   padding: 16px;
+  touch-action: pan-y;
+  user-select: none;
 }
 
 .presenter-meta {

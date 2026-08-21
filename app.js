@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v27';
+const OFFLINE_CACHE_NAME = 'palco-offline-v28';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -218,8 +218,11 @@ editCurrentBtn.addEventListener('click', editCurrentSpeech);
 document.querySelector('#prevBtn').addEventListener('click', () => movePresenter(-1));
 document.querySelector('#nextBtn').addEventListener('click', () => movePresenter(1));
 document.querySelector('#doneBtn').addEventListener('click', markCurrentSpoken);
-document.querySelector('.presenter-card').addEventListener('pointerdown', startPresenterSwipe);
-document.querySelector('.presenter-card').addEventListener('pointerup', finishPresenterSwipe);
+const presenterCard = document.querySelector('.presenter-card');
+presenterCard.addEventListener('pointerdown', startPresenterSwipe);
+presenterCard.addEventListener('pointermove', movePresenterSwipe);
+presenterCard.addEventListener('pointerup', finishPresenterSwipe);
+presenterCard.addEventListener('pointercancel', cancelPresenterSwipe);
 document.querySelector('#fontRange').addEventListener('input', (event) => {
   const maxSize = window.innerWidth <= 460 ? 46 : 60;
   const size = Math.min(Number(event.target.value), maxSize);
@@ -1765,19 +1768,62 @@ function focusFirstAvailableInTopic() {
   currentIndex = next >= 0 ? next : 0;
 }
 
-let swipeStartX = 0;
-let swipeStartY = 0;
+const swipeState = {
+  active: false,
+  pointerId: null,
+  startX: 0,
+  startY: 0,
+  lastX: 0,
+  lastY: 0,
+  horizontalIntent: false,
+};
 
 function startPresenterSwipe(event) {
-  swipeStartX = event.clientX;
-  swipeStartY = event.clientY;
+  if (event.button !== undefined && event.button !== 0) return;
+  if (event.target.closest('button, input, textarea, select, dialog, [contenteditable="true"]')) return;
+
+  swipeState.active = true;
+  swipeState.pointerId = event.pointerId;
+  swipeState.startX = event.clientX;
+  swipeState.startY = event.clientY;
+  swipeState.lastX = event.clientX;
+  swipeState.lastY = event.clientY;
+  swipeState.horizontalIntent = false;
+  event.currentTarget.setPointerCapture?.(event.pointerId);
+}
+
+function movePresenterSwipe(event) {
+  if (!swipeState.active || event.pointerId !== swipeState.pointerId) return;
+
+  swipeState.lastX = event.clientX;
+  swipeState.lastY = event.clientY;
+
+  const deltaX = event.clientX - swipeState.startX;
+  const deltaY = event.clientY - swipeState.startY;
+  if (Math.abs(deltaX) > 16 && Math.abs(deltaX) > Math.abs(deltaY) * 1.15) {
+    swipeState.horizontalIntent = true;
+    event.preventDefault();
+  }
 }
 
 function finishPresenterSwipe(event) {
-  const deltaX = event.clientX - swipeStartX;
-  const deltaY = event.clientY - swipeStartY;
-  if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.4) return;
-  movePresenter(deltaX < 0 ? 1 : -1);
+  if (!swipeState.active || event.pointerId !== swipeState.pointerId) return;
+
+  const deltaX = event.clientX - swipeState.startX;
+  const deltaY = event.clientY - swipeState.startY;
+  const isSwipe = Math.abs(deltaX) >= 44 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1;
+
+  cancelPresenterSwipe(event);
+  if (isSwipe) movePresenter(deltaX < 0 ? 1 : -1);
+}
+
+function cancelPresenterSwipe(event) {
+  if (event?.pointerId === swipeState.pointerId) {
+    event.currentTarget?.releasePointerCapture?.(event.pointerId);
+  }
+  swipeState.active = false;
+  swipeState.pointerId = null;
+  swipeState.horizontalIntent = false;
 }
 
 function getSpeechesByTopic(topic) {
