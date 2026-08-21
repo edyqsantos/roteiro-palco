@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v32';
+const OFFLINE_CACHE_NAME = 'palco-offline-v33';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -130,7 +130,6 @@ const views = {
   transfer: document.querySelector('#transferView'),
 };
 
-const topicGrid = document.querySelector('#topicGrid');
 const playlistGrid = document.querySelector('#playlistGrid');
 const playlistSelect = document.querySelector('#playlistSelect');
 const playlistItems = document.querySelector('#playlistItems');
@@ -550,27 +549,6 @@ function renderHome() {
   playlistGrid.querySelectorAll('[data-playlist-open]').forEach((button) => {
     button.addEventListener('click', () => openPlaylist(button.dataset.playlistOpen));
   });
-
-  topicGrid.innerHTML = route.topics
-    .map((topic) => {
-      const speeches = getSpeechesByTopic(topic);
-      const remaining = speeches.reduce((sum, speech) => sum + speech.remaining, 0);
-      const total = speeches.reduce((sum, speech) => sum + speech.target, 0);
-      const empty = speeches.length === 0;
-
-      return `
-        <button class="topic-button ${empty ? 'empty' : ''}" type="button" data-topic="${escapeHtml(topic)}">
-          <span>${escapeHtml(topic)}</span>
-          <strong>${empty ? 'Sem fala' : `${remaining}/${total}`}</strong>
-        </button>
-      `;
-    })
-    .join('');
-
-  topicGrid.querySelectorAll('[data-topic]').forEach((button) => {
-    button.addEventListener('click', () => openTopic(button.dataset.topic));
-  });
-
 }
 
 function renderPresenter() {
@@ -884,14 +862,12 @@ function renderEditList() {
               <strong class="script-title">${escapeHtml(speech.title || createSpeechTitle(speech, speech.index))}</strong>
               <span class="category">${escapeHtml(speech.topic)}</span>
             </div>
-            <span class="status">${speech.remaining}/${speech.target} restantes</span>
           </div>
           <div class="script-text">${renderEditPreview(speech)}</div>
           <div class="script-actions three">
             <button class="primary-button" type="button" data-add-playlist="${speech.index}">Adicionar</button>
             <button class="secondary-button" type="button" data-edit="${speech.index}">Editar</button>
             <button class="secondary-button" type="button" data-present="${speech.index}">Abrir</button>
-            <button class="secondary-button" type="button" data-reset="${speech.index}">Repor</button>
             <button class="danger-button" type="button" data-delete="${speech.index}">Excluir</button>
           </div>
         </article>
@@ -914,14 +890,6 @@ function renderEditList() {
 
   scriptList.querySelectorAll('[data-edit]').forEach((button) => {
     button.addEventListener('click', () => openSpeechDialog(Number(button.dataset.edit)));
-  });
-
-  scriptList.querySelectorAll('[data-reset]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const speech = currentRoute().speeches[Number(button.dataset.reset)];
-      speech.remaining = speech.target;
-      saveAndRender();
-    });
   });
 
   scriptList.querySelectorAll('[data-delete]').forEach((button) => {
