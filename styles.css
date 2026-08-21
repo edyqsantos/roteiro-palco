@@ -249,6 +249,53 @@ textarea {
   display: none;
 }
 
+.speech-editor-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.table-editor-panel {
+  gap: 8px;
+}
+
+.table-editor-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.table-editor {
+  display: grid;
+  grid-template-columns: 0.95fr 1.35fr 0.85fr;
+  gap: 4px;
+  max-height: min(54vh, 520px);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #101316;
+  padding: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-editor input {
+  min-height: 40px;
+  border-radius: 6px;
+  padding: 0 8px;
+  font-size: 0.92rem;
+}
+
+.table-editor input:nth-child(-n + 3) {
+  border-color: #80611c;
+  background: #2b2518;
+  color: var(--accent-strong);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .topic-editor-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -698,6 +745,64 @@ textarea {
 .present-text.sponsor-mode {
   display: block;
   align-items: initial;
+}
+
+.present-text.table-mode {
+  overflow-x: auto;
+  font-size: 28px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.basic-table {
+  min-width: 100%;
+  display: grid;
+  border: 1px solid #6e8531;
+  background: #101316;
+}
+
+.basic-table-row {
+  display: grid;
+  grid-template-columns: 0.95fr 1.35fr 0.85fr;
+}
+
+.basic-table-row > div {
+  min-width: 0;
+  border-right: 1px solid #5c6f2b;
+  border-bottom: 1px solid #5c6f2b;
+  padding: 6px 8px;
+  overflow-wrap: break-word;
+  line-height: 1.18;
+}
+
+.basic-table-row > div:last-child {
+  border-right: 0;
+}
+
+.basic-table-row:last-child > div {
+  border-bottom: 0;
+}
+
+.basic-table-header > div {
+  background: #568ad2;
+  color: #fff;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.basic-table-row:not(.basic-table-header):nth-child(odd) > div {
+  background: #151a14;
+}
+
+.basic-table-row:not(.basic-table-header):nth-child(even) > div {
+  background: #0f1214;
+}
+
+.table-preview-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--accent-strong);
+  text-transform: uppercase;
 }
 
 .sponsor-list {

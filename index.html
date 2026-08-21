@@ -196,35 +196,51 @@
           Repetir quantas vezes?
           <input id="editTarget" type="number" min="1" max="20" value="1" />
         </label>
-        <div class="highlight-tools" aria-label="Destacar trecho selecionado">
-          <button class="highlight-button plain-highlight" type="button" data-highlight-clear title="Remover destaque">
-            Normal
-          </button>
-          <button class="highlight-button plain-highlight" type="button" data-uppercase title="Colocar texto em maiúsculo">
-            Maiúsc.
-          </button>
-          <button class="highlight-button" type="button" data-highlight-color="verde" title="Destacar em verde">
-            <span style="--swatch: #78d39b"></span>
-            Verde
-          </button>
-          <button class="highlight-button" type="button" data-highlight-color="azul" title="Destacar em azul">
-            <span style="--swatch: #80c7ff"></span>
-            Azul
-          </button>
-          <button class="highlight-button" type="button" data-highlight-color="vermelho" title="Destacar em vermelho">
-            <span style="--swatch: #ff9f9f"></span>
-            Verm.
-          </button>
-          <button class="highlight-button" type="button" data-highlight-color="amarelo" title="Destacar em amarelo">
-            <span style="--swatch: #f4c95d"></span>
-            Amar.
-          </button>
-        </div>
         <label>
-          Texto
-          <div id="editVisual" class="visual-editor" contenteditable="true" role="textbox" aria-multiline="true"></div>
-          <textarea id="editText" class="raw-editor" rows="7"></textarea>
+          Tipo da nota
+          <select id="editKind">
+            <option value="text">Texto normal</option>
+            <option value="table">Tabela 3 colunas</option>
+          </select>
         </label>
+        <section id="textEditorPanel" class="speech-editor-panel">
+          <div class="highlight-tools" aria-label="Destacar trecho selecionado">
+            <button class="highlight-button plain-highlight" type="button" data-highlight-clear title="Remover destaque">
+              Normal
+            </button>
+            <button class="highlight-button plain-highlight" type="button" data-uppercase title="Colocar texto em maiúsculo">
+              Maiúsc.
+            </button>
+            <button class="highlight-button" type="button" data-highlight-color="verde" title="Destacar em verde">
+              <span style="--swatch: #78d39b"></span>
+              Verde
+            </button>
+            <button class="highlight-button" type="button" data-highlight-color="azul" title="Destacar em azul">
+              <span style="--swatch: #80c7ff"></span>
+              Azul
+            </button>
+            <button class="highlight-button" type="button" data-highlight-color="vermelho" title="Destacar em vermelho">
+              <span style="--swatch: #ff9f9f"></span>
+              Verm.
+            </button>
+            <button class="highlight-button" type="button" data-highlight-color="amarelo" title="Destacar em amarelo">
+              <span style="--swatch: #f4c95d"></span>
+              Amar.
+            </button>
+          </div>
+          <label>
+            Texto
+            <div id="editVisual" class="visual-editor" contenteditable="true" role="textbox" aria-multiline="true"></div>
+            <textarea id="editText" class="raw-editor" rows="7"></textarea>
+          </label>
+        </section>
+        <section id="tableEditorPanel" class="speech-editor-panel table-editor-panel" hidden>
+          <div class="table-editor-head">
+            <span>Tabela com 3 colunas</span>
+            <button class="secondary-button mini-button" id="clearTableBtn" type="button">Limpar</button>
+          </div>
+          <div class="table-editor" id="editTable"></div>
+        </section>
         <div class="dialog-actions">
           <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
           <button class="primary-button" id="saveSpeechBtn" value="default" type="submit">Salvar</button>

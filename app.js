@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v30';
+const OFFLINE_CACHE_NAME = 'palco-offline-v31';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -154,8 +154,12 @@ const editTopicSummary = document.querySelector('#editTopicSummary');
 const showTopicBtn = document.querySelector('#showTopicBtn');
 const editTitle = document.querySelector('#editTitle');
 const editTarget = document.querySelector('#editTarget');
+const editKind = document.querySelector('#editKind');
 const editText = document.querySelector('#editText');
 const editVisual = document.querySelector('#editVisual');
+const textEditorPanel = document.querySelector('#textEditorPanel');
+const tableEditorPanel = document.querySelector('#tableEditorPanel');
+const editTable = document.querySelector('#editTable');
 const dialogTitle = document.querySelector('#dialogTitle');
 const newTopicName = document.querySelector('#newTopicName');
 const topicModeName = document.querySelector('#topicModeName');
@@ -284,6 +288,8 @@ syncTokenInput.addEventListener('input', () => {
 });
 document.addEventListener('selectionchange', rememberEditorSelection);
 editTopic.addEventListener('change', updateSpeechTopicSummary);
+editKind.addEventListener('change', updateSpeechKindUI);
+document.querySelector('#clearTableBtn').addEventListener('click', clearTableEditor);
 showTopicBtn.addEventListener('click', () => setTopicPickerVisible(editTopicField.hidden));
 urgentBtn.addEventListener('click', openUrgentDialog);
 document.querySelector('#refreshUrgentBtn').addEventListener('click', fetchUrgentMessages);
@@ -365,7 +371,9 @@ function normalizeState(nextState) {
         id: speech.id || createId(),
         title: speech.title || createSpeechTitle(speech, speechIndex),
         topic: normalizeTopicName(speech.topic || topics[0] || 'Informes'),
+        kind: speech.kind === 'table' ? 'table' : 'text',
         text: speech.text || '',
+        table: normalizeSpeechTable(speech.table),
         target,
         remaining,
       };
@@ -571,7 +579,7 @@ function renderPresenter() {
 
   if (!entries.length) {
     presentCounter.textContent = '0/0';
-    presentText.classList.remove('list-mode', 'sponsor-mode', 'rich-mode');
+    presentText.classList.remove('list-mode', 'sponsor-mode', 'rich-mode', 'table-mode');
     presentText.textContent = presentationMode === 'playlist' ? 'Essa playlist ainda não tem notas.' : 'Nenhuma fala nesse botão ainda.';
     repeatText.textContent = presentationMode === 'playlist' ? 'Adicione notas em EDITAR.' : 'Crie uma fala para este tópico.';
     editCurrentBtn.textContent = presentationMode === 'playlist' ? 'Montar' : 'Editar';
@@ -616,6 +624,11 @@ function getPresentationContextName() {
 }
 
 function renderPresentText(speech) {
+  if (speech.kind === 'table') {
+    renderTableText(speech);
+    return;
+  }
+
   const text = speech.text || '';
   const topic = speech.topic || activeTopic;
   if (currentRoute().topicModes?.[topic] === 'sponsor') {
@@ -628,7 +641,7 @@ function renderPresentText(speech) {
   const hasBlankLines = rawLines.some((line) => line.trim() === '');
   const isList = lines.length >= 5 && !hasBlankLines;
   presentText.classList.toggle('list-mode', isList);
-  presentText.classList.remove('sponsor-mode');
+  presentText.classList.remove('sponsor-mode', 'table-mode');
   presentText.classList.toggle('rich-mode', text.includes('[['));
 
   presentText.innerHTML = rawLines.map(renderPresentLine).join('');
@@ -646,6 +659,40 @@ function applyPresentFontSize(size) {
 function renderPresentLine(line) {
   if (!line.trim()) return '<div class="present-gap" aria-hidden="true"></div>';
   return `<div class="present-line">${formatHighlights(line)}</div>`;
+}
+
+function renderTableText(speech) {
+  const table = normalizeSpeechTable(speech.table);
+  presentText.classList.remove('list-mode', 'sponsor-mode', 'rich-mode');
+  presentText.classList.add('table-mode');
+  presentText.innerHTML = renderBasicTable(table);
+
+  const sliderValue = Number(document.querySelector('#fontRange').value || 28);
+  const maxSize = window.innerWidth <= 460 ? 34 : 42;
+  applyPresentFontSize(Math.min(sliderValue, maxSize));
+}
+
+function renderBasicTable(table) {
+  const headers = normalizeTableRow(table.headers, ['Coluna 1', 'Coluna 2', 'Coluna 3']);
+  const rows = table.rows.filter((row) => row.some((cell) => cell.trim()));
+  const safeRows = rows.length ? rows : [['', '', '']];
+
+  return `
+    <div class="basic-table" role="table">
+      <div class="basic-table-row basic-table-header" role="row">
+        ${headers.map((cell) => `<div role="columnheader">${formatHighlights(cell)}</div>`).join('')}
+      </div>
+      ${safeRows
+        .map(
+          (row) => `
+            <div class="basic-table-row" role="row">
+              ${normalizeTableRow(row).map((cell) => `<div role="cell">${formatHighlights(cell)}</div>`).join('')}
+            </div>
+          `,
+        )
+        .join('')}
+    </div>
+  `;
 }
 
 function rememberEditorSelection() {
@@ -776,8 +823,7 @@ function unwrapElement(element) {
 
 function renderSponsorText(text) {
   const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
-  presentText.classList.remove('list-mode');
-  presentText.classList.remove('rich-mode');
+  presentText.classList.remove('list-mode', 'rich-mode', 'table-mode');
   presentText.classList.add('sponsor-mode');
   presentText.innerHTML = `<div class="sponsor-list">${lines.map(renderSponsorLine).join('')}</div>`;
 
@@ -838,7 +884,7 @@ function renderEditList() {
             </div>
             <span class="status">${speech.remaining}/${speech.target} restantes</span>
           </div>
-          <div class="script-text">${formatHighlights(speech.text)}</div>
+          <div class="script-text">${renderEditPreview(speech)}</div>
           <div class="script-actions three">
             <button class="primary-button" type="button" data-add-playlist="${speech.index}">Adicionar</button>
             <button class="secondary-button" type="button" data-edit="${speech.index}">Editar</button>
@@ -934,6 +980,19 @@ function renderPlaylistItems() {
   playlistItems.querySelectorAll('[data-playlist-drag]').forEach((button) => {
     button.addEventListener('pointerdown', (event) => startPlaylistDrag(event, Number(button.dataset.playlistDrag)));
   });
+}
+
+function renderEditPreview(speech) {
+  if (speech.kind !== 'table') return formatHighlights(speech.text);
+
+  const table = normalizeSpeechTable(speech.table);
+  const rows = table.rows.filter((row) => row.some((cell) => cell.trim())).slice(0, 4);
+  const preview = [normalizeTableRow(table.headers), ...rows]
+    .map((row) => normalizeTableRow(row).filter(Boolean).join(' | '))
+    .filter(Boolean)
+    .join('\n');
+
+  return `<strong class="table-preview-label">Tabela</strong>${escapeHtml(preview || 'Tabela vazia')}`;
 }
 
 function setEditSection(section) {
@@ -1124,8 +1183,11 @@ function openSpeechDialog(index = null) {
   updateSpeechTopicSummary();
   setTopicPickerVisible(false);
   editTarget.value = speech?.target || 1;
+  editKind.value = speech?.kind === 'table' ? 'table' : 'text';
   editText.value = text;
   editVisual.innerHTML = markupToEditorHtml(text);
+  renderTableEditor(speech?.table);
+  updateSpeechKindUI();
   savedEditorRange = null;
   speechDialog.showModal();
 }
@@ -1137,6 +1199,77 @@ function updateSpeechTopicSummary() {
 function setTopicPickerVisible(visible) {
   editTopicField.hidden = !visible;
   showTopicBtn.textContent = visible ? 'Ocultar tópicos' : 'Trocar tópico';
+}
+
+function updateSpeechKindUI() {
+  const isTable = editKind.value === 'table';
+  textEditorPanel.hidden = isTable;
+  tableEditorPanel.hidden = !isTable;
+}
+
+function renderTableEditor(tableData = null) {
+  const table = normalizeSpeechTable(tableData);
+  const rows = [normalizeTableRow(table.headers, ['Apresentação', 'Atração', 'Horário']), ...table.rows];
+
+  editTable.innerHTML = rows
+    .map((row, rowIndex) =>
+      normalizeTableRow(row)
+        .map(
+          (cell, colIndex) => `
+            <input
+              type="text"
+              data-table-row="${rowIndex}"
+              data-table-col="${colIndex}"
+              value="${escapeHtml(cell)}"
+              placeholder="${rowIndex === 0 ? `Coluna ${colIndex + 1}` : ''}"
+              aria-label="${rowIndex === 0 ? `Cabeçalho ${colIndex + 1}` : `Linha ${rowIndex}, coluna ${colIndex + 1}`}"
+            />
+          `,
+        )
+        .join(''),
+    )
+    .join('');
+}
+
+function readTableEditor() {
+  const rows = Array.from({ length: 16 }, () => ['', '', '']);
+  editTable.querySelectorAll('input[data-table-row]').forEach((input) => {
+    const row = Number(input.dataset.tableRow);
+    const col = Number(input.dataset.tableCol);
+    if (rows[row] && col >= 0 && col < 3) rows[row][col] = input.value.trim();
+  });
+
+  return normalizeSpeechTable({
+    headers: rows[0],
+    rows: rows.slice(1),
+  });
+}
+
+function clearTableEditor() {
+  renderTableEditor({
+    headers: ['Apresentação', 'Atração', 'Horário'],
+    rows: [],
+  });
+}
+
+function normalizeSpeechTable(table = null) {
+  const headers = normalizeTableRow(table?.headers, ['Apresentação', 'Atração', 'Horário']);
+  const sourceRows = Array.isArray(table?.rows) ? table.rows : [];
+  const rows = Array.from({ length: 15 }, (_, index) => normalizeTableRow(sourceRows[index]));
+  return { headers, rows };
+}
+
+function normalizeTableRow(row = [], fallback = ['', '', '']) {
+  return Array.from({ length: 3 }, (_, index) => String(row?.[index] ?? fallback[index] ?? '').trim());
+}
+
+function tableToPlainText(table) {
+  const rows = [normalizeTableRow(table.headers), ...table.rows.map((row) => normalizeTableRow(row))];
+  return rows
+    .filter((row, index) => index === 0 || row.some((cell) => cell.trim()))
+    .map((row) => row.join(' | '))
+    .join('\n')
+    .trim();
 }
 
 function editCurrentSpeech() {
@@ -1152,8 +1285,18 @@ function editCurrentSpeech() {
 }
 
 function saveSpeechFromDialog() {
-  editText.value = normalizeHighlightMarkup(editorHtmlToMarkup(editVisual));
-  const text = editText.value.trim();
+  const kind = editKind.value === 'table' ? 'table' : 'text';
+  let text = '';
+  let table = normalizeSpeechTable();
+
+  if (kind === 'table') {
+    table = readTableEditor();
+    text = tableToPlainText(table);
+  } else {
+    editText.value = normalizeHighlightMarkup(editorHtmlToMarkup(editVisual));
+    text = editText.value.trim();
+  }
+
   if (!text) return;
 
   const target = clamp(Number(editTarget.value || 1), 1, 20);
@@ -1166,7 +1309,9 @@ function saveSpeechFromDialog() {
     id: previous?.id || createId(),
     title,
     topic,
+    kind,
     text,
+    table,
     target,
     remaining: clamp(target - spoken, 0, target),
   };
