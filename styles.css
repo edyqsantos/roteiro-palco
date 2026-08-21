@@ -82,6 +82,36 @@ h1 {
   text-transform: uppercase;
 }
 
+.urgent-button {
+  min-height: 54px;
+  border: 1px solid #8a2d2d;
+  border-radius: 8px;
+  background: #3a1717;
+  color: #ffe0dc;
+  font-weight: 900;
+  padding: 8px 12px;
+}
+
+.urgent-button strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--accent-strong);
+}
+
+.urgent-button.has-urgent {
+  animation: urgentPulse 0.9s infinite alternate;
+}
+
+@keyframes urgentPulse {
+  from {
+    box-shadow: 0 0 0 rgb(255 138 128 / 0);
+  }
+
+  to {
+    box-shadow: 0 0 18px rgb(255 138 128 / 0.75);
+  }
+}
+
 h2 {
   font-size: 1.2rem;
 }
@@ -246,6 +276,120 @@ textarea {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin: 12px 0;
+}
+
+.home-section,
+.playlist-builder {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.section-title {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.library-title {
+  margin-top: 14px;
+}
+
+.mini-button {
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 0.78rem;
+}
+
+.playlist-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.playlist-button {
+  width: 100%;
+  min-height: 78px;
+  border: 1px solid #80611c;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #211a0a;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 14px;
+  text-align: left;
+}
+
+.playlist-button span {
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.playlist-button strong {
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.playlist-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.playlist-items,
+.urgent-list {
+  display: grid;
+  gap: 8px;
+}
+
+.playlist-item,
+.urgent-item {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #171b20;
+  padding: 10px;
+}
+
+.playlist-item-head,
+.urgent-item-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.playlist-item strong,
+.urgent-item strong {
+  text-transform: uppercase;
+}
+
+.playlist-item span,
+.urgent-item span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.playlist-item-actions,
+.urgent-item-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.playlist-item-actions button,
+.urgent-item-actions button {
+  min-height: 38px;
+  padding: 0 8px;
+  font-size: 0.78rem;
 }
 
 .topic-grid {
@@ -700,7 +844,8 @@ dialog::backdrop {
   .toolbar,
   .home-actions,
   .transfer-actions,
-  .edit-tools {
+  .edit-tools,
+  .playlist-actions {
     grid-template-columns: 1fr;
   }
 
@@ -725,6 +870,19 @@ dialog::backdrop {
   .presenter-controls,
   .script-actions.three {
     grid-template-columns: 1fr;
+  }
+
+  .playlist-button {
+    min-height: 70px;
+  }
+
+  .playlist-button span {
+    font-size: 1.05rem;
+  }
+
+  .playlist-item-actions,
+  .urgent-item-actions {
+    grid-template-columns: 1fr 1fr;
   }
 
   .reorder-item,

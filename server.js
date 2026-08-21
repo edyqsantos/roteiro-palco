@@ -95,6 +95,14 @@ async function getDb() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await dbPool.query(`
+    CREATE TABLE IF NOT EXISTS palco_urgent (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      text TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
 
   return dbPool;
 }
@@ -151,19 +159,162 @@ async function handleSyncRequest(req, res) {
   sendJson(res, 405, { ok: false, error: 'Método não permitido.' });
 }
 
-const server = http.createServer(async (req, res) => {
-  if (!isAuthorized(req)) {
-    requestAuth(res);
+async function handleUrgentRequest(req, res) {
+  if (!isSyncAuthorized(req)) {
+    sendJson(res, 401, { ok: false, error: 'Código de sincronização inválido.' });
     return;
   }
 
+  const db = await getDb();
+  if (!db) {
+    sendJson(res, 503, { ok: false, error: 'Banco de dados não configurado no Railway.' });
+    return;
+  }
+
+  if (req.method !== 'GET') {
+    sendJson(res, 405, { ok: false, error: 'Método não permitido.' });
+    return;
+  }
+
+  const result = await db.query(
+    `
+      SELECT id, title, text, created_at
+      FROM palco_urgent
+      ORDER BY created_at DESC
+      LIMIT 20
+    `,
+  );
+
+  sendJson(res, 200, {
+    ok: true,
+    messages: result.rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      text: row.text,
+      createdAt: row.created_at,
+    })),
+  });
+}
+
+async function handleUrgentSubmit(req, res, url) {
+  const token = url.searchParams.get('token') || req.headers['x-sync-token'] || '';
+  if (SYNC_TOKEN && token !== SYNC_TOKEN) {
+    sendJson(res, 401, { ok: false, error: 'Link urgente inválido.' });
+    return;
+  }
+
+  const db = await getDb();
+  if (!db) {
+    sendJson(res, 503, { ok: false, error: 'Banco de dados não configurado no Railway.' });
+    return;
+  }
+
+  if (req.method === 'GET') {
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    });
+    res.end(`
+      <!doctype html>
+      <html lang="pt-BR">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Urgente - Palco</title>
+          <style>
+            body { margin: 0; min-height: 100vh; background: #121417; color: #f4f2ec; font-family: Arial, sans-serif; padding: 18px; }
+            main { max-width: 560px; margin: 0 auto; display: grid; gap: 14px; }
+            label { display: grid; gap: 6px; color: #aeb6bf; }
+            input, textarea, button { font: inherit; border-radius: 8px; border: 1px solid #303842; }
+            input, textarea { background: #1b1f24; color: #f4f2ec; padding: 12px; }
+            button { min-height: 50px; background: #f4c95d; color: #211a0a; font-weight: 800; }
+          </style>
+        </head>
+        <body>
+          <main>
+            <h1>Enviar urgente</h1>
+            <label>Título<input id="title" placeholder="Ex: Carro com alarme" /></label>
+            <label>Recado<textarea id="text" rows="8" placeholder="Digite o recado para o locutor"></textarea></label>
+            <button id="send">Enviar</button>
+            <p id="status"></p>
+          </main>
+          <script>
+            document.querySelector('#send').addEventListener('click', async () => {
+              const status = document.querySelector('#status');
+              status.textContent = 'Enviando...';
+              const response = await fetch(location.href, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  title: document.querySelector('#title').value,
+                  text: document.querySelector('#text').value,
+                }),
+              });
+              status.textContent = response.ok ? 'Enviado.' : 'Não foi possível enviar.';
+            });
+          </script>
+        </body>
+      </html>
+    `);
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    sendJson(res, 405, { ok: false, error: 'Método não permitido.' });
+    return;
+  }
+
+  const body = await readJsonBody(req);
+  const title = String(body.title || 'Urgente').trim().slice(0, 80) || 'Urgente';
+  const text = String(body.text || '').trim();
+  if (!text) {
+    sendJson(res, 400, { ok: false, error: 'Escreva o recado.' });
+    return;
+  }
+
+  const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const result = await db.query(
+    `
+      INSERT INTO palco_urgent (id, title, text, created_at)
+      VALUES ($1, $2, $3, NOW())
+      RETURNING created_at
+    `,
+    [id, title, text],
+  );
+
+  sendJson(res, 200, { ok: true, id, createdAt: result.rows[0].created_at });
+}
+
+const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
+    if (url.pathname === '/api/urgent-submit') {
+      try {
+        await handleUrgentSubmit(req, res, url);
+      } catch (error) {
+        sendJson(res, 500, { ok: false, error: error.message || 'Erro no urgente.' });
+      }
+      return;
+    }
+
+    if (!isAuthorized(req)) {
+      requestAuth(res);
+      return;
+    }
+
     if (url.pathname === '/api/sync') {
       try {
         await handleSyncRequest(req, res);
       } catch (error) {
         sendJson(res, 500, { ok: false, error: error.message || 'Erro na sincronização.' });
+      }
+      return;
+    }
+    if (url.pathname === '/api/urgent') {
+      try {
+        await handleUrgentRequest(req, res);
+      } catch (error) {
+        sendJson(res, 500, { ok: false, error: error.message || 'Erro no urgente.' });
       }
       return;
     }

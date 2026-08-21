@@ -21,6 +21,10 @@
           <h1>Palco</h1>
           <p class="offline-status" id="offlineStatus">Preparando offline...</p>
         </div>
+        <button class="urgent-button" id="urgentBtn" type="button" hidden>
+          Urgente
+          <strong id="urgentCount">0</strong>
+        </button>
       </header>
 
       <nav class="tabs" aria-label="Seções">
@@ -33,6 +37,16 @@
           <span>Roteiro</span>
           <strong id="currentRouteName">Roteiro Principal</strong>
         </button>
+        <section class="home-section">
+          <div class="section-title">
+            <span>Playlists</span>
+            <button class="secondary-button mini-button" id="quickPlaylistBtn" type="button">+ Playlist</button>
+          </div>
+          <div class="playlist-grid" id="playlistGrid"></div>
+        </section>
+        <div class="section-title library-title">
+          <span>Biblioteca por botão</span>
+        </div>
         <div class="topic-grid" id="topicGrid"></div>
       </section>
 
@@ -78,6 +92,21 @@
           <button class="secondary-button" id="reorderTopicsBtn" type="button">Reordenar Home</button>
           <button class="secondary-button" data-view-button="transfer" type="button">Transferir roteiro</button>
         </div>
+        <section class="playlist-builder">
+          <div class="section-title">
+            <span>Playlist ativa</span>
+            <button class="primary-button mini-button" id="newPlaylistBtn" type="button">+ Playlist</button>
+          </div>
+          <div class="toolbar">
+            <select id="playlistSelect" aria-label="Escolher playlist"></select>
+            <button class="secondary-button" id="duplicatePlaylistBtn" type="button">Duplicar</button>
+          </div>
+          <div class="playlist-actions">
+            <button class="primary-button" id="presentPlaylistBtn" type="button">Apresentar playlist</button>
+            <button class="secondary-button" id="renamePlaylistBtn" type="button">Renomear</button>
+          </div>
+          <div class="playlist-items" id="playlistItems"></div>
+        </section>
         <div class="toolbar">
           <select id="topicFilter" aria-label="Filtrar tópico">
             <option value="todos">Todos os tópicos</option>
@@ -125,6 +154,11 @@
             <button class="secondary-button" id="pullCloudBtn" type="button">Buscar da nuvem</button>
           </div>
           <p class="backup-status" id="cloudStatus">Nuvem ainda não sincronizada neste aparelho.</p>
+          <label>
+            Link secreto para urgentes
+            <input id="urgentLinkInput" type="text" readonly placeholder="Digite o código acima para gerar o link" />
+          </label>
+          <button class="secondary-button full" id="copyUrgentLinkBtn" type="button">Copiar link urgente</button>
         </div>
       </section>
     </main>
@@ -132,6 +166,10 @@
     <dialog id="speechDialog">
       <form method="dialog" class="dialog-form">
         <h2 id="dialogTitle">Nova fala</h2>
+        <label>
+          Nome da nota
+          <input id="editTitle" type="text" maxlength="50" placeholder="Ex: Abraço 3" />
+        </label>
         <div class="topic-editor-row">
           <div>
             <span>Tópico</span>
@@ -179,6 +217,32 @@
         <div class="dialog-actions">
           <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
           <button class="primary-button" id="saveSpeechBtn" value="default" type="submit">Salvar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="playlistDialog">
+      <form method="dialog" class="dialog-form">
+        <h2 id="playlistDialogTitle">Nova playlist</h2>
+        <label>
+          Nome da playlist
+          <input id="playlistNameInput" type="text" maxlength="50" placeholder="Ex: Antes do Show 1" />
+        </label>
+        <div class="dialog-actions">
+          <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
+          <button class="primary-button" id="savePlaylistBtn" value="default" type="submit">Salvar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="urgentDialog">
+      <form method="dialog" class="dialog-form">
+        <h2>Urgente</h2>
+        <div class="urgent-list" id="urgentList"></div>
+        <p class="status" id="urgentHint">Recados enviados pelo link secreto aparecem aqui quando houver internet.</p>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="refreshUrgentBtn" type="button">Atualizar</button>
+          <button class="primary-button" value="default" type="submit">Fechar</button>
         </div>
       </form>
     </dialog>
