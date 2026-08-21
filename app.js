@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v26';
+const OFFLINE_CACHE_NAME = 'palco-offline-v27';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -343,8 +343,10 @@ function normalizeState(nextState) {
   const normalizeTopicName = (topic) => (topic === 'Agradecimentos' ? 'Agradecer' : topic);
 
   const normalizeRoute = (route, index = 0) => {
-    const baseSpeeches = route.speeches || defaultSpeeches;
-    const topics = [...new Set([...(route.topics || defaultTopics), ...baseSpeeches.map((speech) => speech.topic)].map(normalizeTopicName))];
+    const hasSpeechList = Array.isArray(route.speeches);
+    const baseSpeeches = hasSpeechList ? route.speeches : defaultSpeeches;
+    const baseTopics = Array.isArray(route.topics) && route.topics.length ? route.topics : defaultTopics;
+    const topics = [...new Set([...baseTopics, ...baseSpeeches.map((speech) => speech.topic)].map(normalizeTopicName))].filter(Boolean);
     const speeches = baseSpeeches.map((speech, speechIndex) => {
       const target = Math.max(1, Number(speech.target || 1));
       const remaining = Math.min(target, Math.max(0, Number(speech.remaining ?? target)));
@@ -418,6 +420,9 @@ function currentRoute() {
     route.activePlaylistId = route.playlists?.[0]?.id || '';
   }
   activePlaylistId = route.activePlaylistId || activePlaylistId || route.playlists?.[0]?.id || '';
+  if (!route.topics?.length) route.topics = [...defaultTopics];
+  if (!Array.isArray(route.speeches)) route.speeches = [];
+  if (!Array.isArray(route.playlists)) route.playlists = [];
   return route;
 }
 
@@ -1942,14 +1947,23 @@ function registerOfflineApp() {
     .register('./service-worker.js')
     .then(async (registration) => {
       offlineStatus.textContent = 'Preparando offline...';
-      await registration.update();
-      await navigator.serviceWorker.ready;
+      await registration.update().catch(() => null);
+      await waitForServiceWorkerReady();
       await prepareOfflineCache();
       offlineStatus.textContent = 'Offline pronto';
     })
     .catch(() => {
       offlineStatus.textContent = 'Offline ainda não pronto';
     });
+}
+
+function waitForServiceWorkerReady() {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise((resolve) => {
+      setTimeout(resolve, 3500);
+    }),
+  ]);
 }
 
 async function prepareOfflineCache() {
