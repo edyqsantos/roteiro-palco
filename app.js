@@ -2,7 +2,7 @@ const STORAGE_KEY = 'roteiro-palco-prototipo-quermesse-home-v1';
 const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
-const OFFLINE_CACHE_NAME = 'palco-offline-v24';
+const OFFLINE_CACHE_NAME = 'palco-offline-v25';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -137,6 +137,9 @@ const topicModeDialog = document.querySelector('#topicModeDialog');
 const renameTopicDialog = document.querySelector('#renameTopicDialog');
 const reorderDialog = document.querySelector('#reorderDialog');
 const editTopic = document.querySelector('#editTopic');
+const editTopicField = document.querySelector('#editTopicField');
+const editTopicSummary = document.querySelector('#editTopicSummary');
+const showTopicBtn = document.querySelector('#showTopicBtn');
 const editTarget = document.querySelector('#editTarget');
 const editText = document.querySelector('#editText');
 const editVisual = document.querySelector('#editVisual');
@@ -215,6 +218,14 @@ document.querySelectorAll('[data-highlight-clear]').forEach((button) => {
     if (event.detail === 0) clearHighlightSelection();
   });
 });
+document.querySelector('[data-uppercase]').addEventListener('pointerdown', (event) => {
+  event.preventDefault();
+  uppercaseEditorSelection();
+});
+document.querySelector('[data-uppercase]').addEventListener('click', (event) => {
+  event.preventDefault();
+  if (event.detail === 0) uppercaseEditorSelection();
+});
 document.querySelector('#exportBtn').addEventListener('click', exportBackup);
 document.querySelector('#copyBackupBtn').addEventListener('click', copyBackup);
 document.querySelector('#importBackupBtn').addEventListener('click', importBackup);
@@ -226,6 +237,8 @@ document.querySelector('#pullCloudBtn').addEventListener('click', pullCloudState
 topicFilter.addEventListener('change', renderEditList);
 syncTokenInput.addEventListener('input', saveSyncToken);
 document.addEventListener('selectionchange', rememberEditorSelection);
+editTopic.addEventListener('change', updateSpeechTopicSummary);
+showTopicBtn.addEventListener('click', () => setTopicPickerVisible(editTopicField.hidden));
 
 document.querySelector('#saveSpeechBtn').addEventListener('click', (event) => {
   event.preventDefault();
@@ -495,12 +508,40 @@ function applyHighlightToSelection(color) {
     editVisual.focus();
     selectNodeContents(span);
   } else {
-    span.append(range.extractContents());
+    span.textContent = range.toString();
+    range.deleteContents();
     range.insertNode(span);
     editVisual.focus();
     placeCaretAfter(span);
   }
   savedEditorRange = null;
+}
+
+function uppercaseEditorSelection() {
+  const range = getEditorRange();
+  if (!range || range.collapsed) {
+    uppercaseTextNodes(editVisual);
+    editVisual.focus();
+    savedEditorRange = null;
+    return;
+  }
+
+  const text = range.toString().toUpperCase();
+  range.deleteContents();
+  range.insertNode(document.createTextNode(text));
+  editVisual.focus();
+  savedEditorRange = null;
+}
+
+function uppercaseTextNodes(node) {
+  node.childNodes.forEach((child) => {
+    if (child.nodeType === Node.TEXT_NODE) {
+      child.nodeValue = child.nodeValue.toUpperCase();
+      return;
+    }
+
+    uppercaseTextNodes(child);
+  });
 }
 
 function clearHighlightSelection() {
@@ -618,7 +659,7 @@ function renderEditList() {
             <span class="category">${escapeHtml(speech.topic)}</span>
             <span class="status">${speech.remaining}/${speech.target} restantes</span>
           </div>
-          <div class="script-text">${escapeHtml(speech.text)}</div>
+          <div class="script-text">${formatHighlights(speech.text)}</div>
           <div class="script-actions three">
             <button class="secondary-button" type="button" data-present="${speech.index}">Abrir</button>
             <button class="secondary-button" type="button" data-edit="${speech.index}">Editar</button>
@@ -666,13 +707,24 @@ function openSpeechDialog(index = null) {
   renderTopicOptions();
 
   const speech = index === null ? null : currentRoute().speeches[index];
-  const text = speech?.text || '';
+  const text = normalizeHighlightMarkup(speech?.text || '');
   editTopic.value = speech?.topic || activeTopic || currentRoute().topics[0];
+  updateSpeechTopicSummary();
+  setTopicPickerVisible(false);
   editTarget.value = speech?.target || 1;
   editText.value = text;
   editVisual.innerHTML = markupToEditorHtml(text);
   savedEditorRange = null;
   speechDialog.showModal();
+}
+
+function updateSpeechTopicSummary() {
+  editTopicSummary.textContent = editTopic.value || 'Sem tópico';
+}
+
+function setTopicPickerVisible(visible) {
+  editTopicField.hidden = !visible;
+  showTopicBtn.textContent = visible ? 'Ocultar tópicos' : 'Trocar tópico';
 }
 
 function editCurrentSpeech() {
@@ -682,7 +734,7 @@ function editCurrentSpeech() {
 }
 
 function saveSpeechFromDialog() {
-  editText.value = editorHtmlToMarkup(editVisual);
+  editText.value = normalizeHighlightMarkup(editorHtmlToMarkup(editVisual));
   const text = editText.value.trim();
   if (!text) return;
 
@@ -1239,7 +1291,7 @@ function escapeHtml(value) {
 }
 
 function markupToEditorHtml(value) {
-  const lines = String(value || '').split('\n');
+  const lines = normalizeHighlightMarkup(value).split('\n');
   return lines.map((line) => `<div>${line ? formatHighlights(line) : '<br>'}</div>`).join('') || '<div><br></div>';
 }
 
@@ -1312,11 +1364,26 @@ function selectRange(range) {
 function formatHighlights(value) {
   const colors = highlightColors();
 
-  return escapeHtml(value).replace(/\[\[(?:(amarelo|azul|verde|vermelho):)?(.+?)\]\]/gi, (_, colorName, text) => {
+  return escapeHtml(normalizeHighlightMarkup(value)).replace(/\[\[(?:(amarelo|azul|verde|vermelho):)?(.+?)\]\]/gi, (_, colorName, text) => {
     const normalizedColor = (colorName || 'amarelo').toLowerCase();
     const color = colors[normalizedColor] || colors.amarelo;
     return `<span class="text-highlight" data-highlight-color="${normalizedColor}" style="color: ${color}">${text}</span>`;
   });
+}
+
+function normalizeHighlightMarkup(value) {
+  let next = String(value || '');
+  let previous = '';
+
+  while (next !== previous) {
+    previous = next;
+    next = next.replace(
+      /\[\[(amarelo|azul|verde|vermelho):\s*\[\[(?:amarelo|azul|verde|vermelho):([^\]]+)\]\]\s*\]\]/gi,
+      '[[$1:$2]]',
+    );
+  }
+
+  return next;
 }
 
 function highlightColors() {

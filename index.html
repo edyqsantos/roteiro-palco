@@ -132,22 +132,27 @@
     <dialog id="speechDialog">
       <form method="dialog" class="dialog-form">
         <h2 id="dialogTitle">Nova fala</h2>
-        <label>
-          Tópico
+        <div class="topic-editor-row">
+          <div>
+            <span>Tópico</span>
+            <strong id="editTopicSummary">Informes</strong>
+          </div>
+          <button class="secondary-button" id="showTopicBtn" type="button">Trocar tópico</button>
+        </div>
+        <label id="editTopicField" hidden>
+          Escolher tópico
           <select id="editTopic"></select>
         </label>
         <label>
           Repetir quantas vezes?
           <input id="editTarget" type="number" min="1" max="20" value="1" />
         </label>
-        <label>
-          Texto
-          <div id="editVisual" class="visual-editor" contenteditable="true" role="textbox" aria-multiline="true"></div>
-          <textarea id="editText" class="raw-editor" rows="7"></textarea>
-        </label>
         <div class="highlight-tools" aria-label="Destacar trecho selecionado">
           <button class="highlight-button plain-highlight" type="button" data-highlight-clear title="Remover destaque">
             Normal
+          </button>
+          <button class="highlight-button plain-highlight" type="button" data-uppercase title="Colocar texto em maiúsculo">
+            Maiúsc.
           </button>
           <button class="highlight-button" type="button" data-highlight-color="verde" title="Destacar em verde">
             <span style="--swatch: #78d39b"></span>
@@ -166,6 +171,11 @@
             Amar.
           </button>
         </div>
+        <label>
+          Texto
+          <div id="editVisual" class="visual-editor" contenteditable="true" role="textbox" aria-multiline="true"></div>
+          <textarea id="editText" class="raw-editor" rows="7"></textarea>
+        </label>
         <div class="dialog-actions">
           <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
           <button class="primary-button" id="saveSpeechBtn" value="default" type="submit">Salvar</button>
