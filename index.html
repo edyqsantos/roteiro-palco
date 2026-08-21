@@ -86,13 +86,15 @@
             <span>Playlist ativa</span>
             <button class="primary-button mini-button" id="newPlaylistBtn" type="button">+ Playlist</button>
           </div>
-          <div class="toolbar">
+          <div class="toolbar" hidden>
             <select id="playlistSelect" aria-label="Escolher playlist"></select>
-            <button class="secondary-button" id="duplicatePlaylistBtn" type="button">Duplicar</button>
           </div>
+          <div class="playlist-picker" id="playlistPicker"></div>
           <div class="playlist-actions">
             <button class="primary-button" id="presentPlaylistBtn" type="button">Apresentar playlist</button>
             <button class="secondary-button" id="renamePlaylistBtn" type="button">Renomear</button>
+            <button class="secondary-button" id="duplicatePlaylistBtn" type="button">Duplicar</button>
+            <button class="danger-button" id="deletePlaylistBtn" type="button">Excluir playlist</button>
           </div>
           <div class="playlist-items" id="playlistItems"></div>
         </section>

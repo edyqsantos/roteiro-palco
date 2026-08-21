@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v34';
+const OFFLINE_CACHE_NAME = 'palco-offline-v35';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -132,6 +132,7 @@ const views = {
 
 const playlistGrid = document.querySelector('#playlistGrid');
 const playlistSelect = document.querySelector('#playlistSelect');
+const playlistPicker = document.querySelector('#playlistPicker');
 const playlistItems = document.querySelector('#playlistItems');
 const scriptList = document.querySelector('#scriptList');
 const topicFilter = document.querySelector('#topicFilter');
@@ -219,6 +220,7 @@ document.querySelector('#quickPlaylistBtn').addEventListener('click', () => open
 document.querySelector('#newPlaylistBtn').addEventListener('click', () => openPlaylistDialog('new'));
 document.querySelector('#duplicatePlaylistBtn').addEventListener('click', duplicateActivePlaylist);
 document.querySelector('#renamePlaylistBtn').addEventListener('click', () => openPlaylistDialog('rename'));
+document.querySelector('#deletePlaylistBtn').addEventListener('click', deleteActivePlaylist);
 document.querySelector('#presentPlaylistBtn').addEventListener('click', () => openPlaylist(activePlaylistId));
 editCurrentBtn.addEventListener('click', editCurrentSpeech);
 document.querySelector('#prevBtn').addEventListener('click', () => movePresenter(-1));
@@ -274,9 +276,7 @@ document.querySelector('#copyUrgentLinkBtn').addEventListener('click', copyUrgen
 topicFilter.addEventListener('change', renderEditList);
 noteSearch.addEventListener('input', renderEditList);
 playlistSelect.addEventListener('change', () => {
-  activePlaylistId = playlistSelect.value;
-  currentRoute().activePlaylistId = activePlaylistId;
-  saveAndRender();
+  selectPlaylist(playlistSelect.value);
 });
 document.querySelectorAll('[data-edit-section]').forEach((button) => {
   button.addEventListener('click', () => setEditSection(button.dataset.editSection));
@@ -517,6 +517,7 @@ function renderPlaylistOptions() {
   if (!route.playlists.length) {
     playlistSelect.innerHTML = '<option value="">Nenhuma playlist</option>';
     playlistSelect.value = '';
+    playlistPicker.innerHTML = '<p class="status">Nenhuma playlist criada.</p>';
     return;
   }
 
@@ -529,6 +530,26 @@ function renderPlaylistOptions() {
   playlistSelect.value = selectedPlaylist;
   activePlaylistId = selectedPlaylist;
   route.activePlaylistId = selectedPlaylist;
+  playlistPicker.innerHTML = route.playlists
+    .map(
+      (playlist) => `
+        <button class="playlist-choice ${playlist.id === selectedPlaylist ? 'active' : ''}" type="button" data-playlist-choice="${escapeHtml(playlist.id)}">
+          <span>${escapeHtml(playlist.name)}</span>
+          <strong>${playlist.items.length}</strong>
+        </button>
+      `,
+    )
+    .join('');
+  playlistPicker.querySelectorAll('[data-playlist-choice]').forEach((button) => {
+    button.addEventListener('click', () => selectPlaylist(button.dataset.playlistChoice));
+  });
+}
+
+function selectPlaylist(playlistId) {
+  if (!currentRoute().playlists.some((playlist) => playlist.id === playlistId)) return;
+  activePlaylistId = playlistId;
+  currentRoute().activePlaylistId = playlistId;
+  saveAndRender();
 }
 
 function renderHome() {
@@ -1076,6 +1097,21 @@ function duplicateActivePlaylist() {
   route.playlists.push(copy);
   route.activePlaylistId = copy.id;
   activePlaylistId = copy.id;
+  saveAndRender();
+}
+
+function deleteActivePlaylist() {
+  const route = currentRoute();
+  const playlist = getActivePlaylist();
+  if (!playlist) return;
+
+  const confirmDelete = window.confirm(`Excluir a playlist "${playlist.name}"? As notas não serão apagadas.`);
+  if (!confirmDelete) return;
+
+  route.playlists = route.playlists.filter((item) => item.id !== playlist.id);
+  const nextPlaylist = route.playlists[0] || null;
+  activePlaylistId = nextPlaylist?.id || '';
+  route.activePlaylistId = activePlaylistId;
   saveAndRender();
 }
 

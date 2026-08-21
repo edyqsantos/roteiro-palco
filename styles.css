@@ -435,6 +435,40 @@ textarea {
   gap: 10px;
 }
 
+.playlist-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.playlist-choice {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.playlist-choice.active {
+  border-color: #80611c;
+  background: var(--accent);
+  color: #211a0a;
+}
+
+.playlist-choice span {
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.playlist-choice strong {
+  font-size: 0.88rem;
+}
+
 .playlist-items,
 .urgent-list {
   display: grid;
@@ -607,10 +641,14 @@ textarea {
 }
 
 .script-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
-  padding: 12px;
+  padding: 10px 12px;
 }
 
 .script-item.done {
@@ -618,10 +656,8 @@ textarea {
 }
 
 .script-head {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: block;
   gap: 12px;
-  margin-bottom: 8px;
 }
 
 .script-title {
@@ -654,13 +690,19 @@ textarea {
 
 .script-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 12px;
+  grid-template-columns: repeat(3, minmax(92px, auto));
+  gap: 6px;
+  margin-top: 0;
 }
 
 .script-actions.three {
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(92px, auto));
+}
+
+.script-actions button {
+  min-height: 38px;
+  padding: 0 10px;
+  font-size: 0.78rem;
 }
 
 .presenter {
@@ -1059,6 +1101,10 @@ dialog::backdrop {
 
   .presenter-controls,
   .script-actions.three {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .script-item {
     grid-template-columns: 1fr;
   }
 
