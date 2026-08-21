@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v29';
+const OFFLINE_CACHE_NAME = 'palco-offline-v30';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
