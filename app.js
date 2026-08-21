@@ -111,8 +111,9 @@ const defaultSpeeches = [
 ];
 
 let state = loadState();
+let activePlaylistId = '';
 let activeTopic = currentRoute().topics[0] || 'Informes';
-let activePlaylistId = currentRoute().activePlaylistId || currentRoute().playlists?.[0]?.id || '';
+activePlaylistId = currentRoute().activePlaylistId || currentRoute().playlists?.[0]?.id || '';
 let presentationMode = 'topic';
 let currentIndex = 0;
 let editingIndex = null;
