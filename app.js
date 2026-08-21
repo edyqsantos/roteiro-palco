@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v35';
+const OFFLINE_CACHE_NAME = 'palco-offline-v36';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -143,6 +143,8 @@ const presentCounter = document.querySelector('#presentCounter');
 const presentText = document.querySelector('#presentText');
 const repeatText = document.querySelector('#repeatText');
 const editCurrentBtn = document.querySelector('#editCurrentBtn');
+const sidePrevBtn = document.querySelector('#sidePrevBtn');
+const sideNextBtn = document.querySelector('#sideNextBtn');
 const speechDialog = document.querySelector('#speechDialog');
 const topicDialog = document.querySelector('#topicDialog');
 const topicModeDialog = document.querySelector('#topicModeDialog');
@@ -226,6 +228,8 @@ editCurrentBtn.addEventListener('click', editCurrentSpeech);
 document.querySelector('#prevBtn').addEventListener('click', () => movePresenter(-1));
 document.querySelector('#nextBtn').addEventListener('click', () => movePresenter(1));
 document.querySelector('#doneBtn').addEventListener('click', markCurrentSpoken);
+sidePrevBtn.addEventListener('click', () => movePresenter(-1));
+sideNextBtn.addEventListener('click', () => movePresenter(1));
 const presenterCard = document.querySelector('.presenter-card');
 presenterCard.addEventListener('pointerdown', startPresenterSwipe);
 presenterCard.addEventListener('pointermove', movePresenterSwipe);
@@ -579,6 +583,7 @@ function renderPresenter() {
 
   if (!entries.length) {
     presentCounter.textContent = '0/0';
+    updatePresenterNav(0);
     presentText.classList.remove('list-mode', 'sponsor-mode', 'rich-mode', 'table-mode');
     presentText.textContent = presentationMode === 'playlist' ? 'Essa playlist ainda não tem notas.' : 'Nenhuma fala nesse botão ainda.';
     repeatText.textContent = presentationMode === 'playlist' ? 'Adicione notas em EDITAR.' : 'Crie uma fala para este tópico.';
@@ -587,6 +592,7 @@ function renderPresenter() {
   }
 
   currentIndex = clamp(currentIndex, 0, entries.length - 1);
+  updatePresenterNav(entries.length);
   const { speech } = entries[currentIndex];
   presentCounter.textContent = `${currentIndex + 1}/${entries.length}`;
   renderPresentText(speech);
@@ -616,6 +622,11 @@ function getPresentationEntries() {
       };
     })
     .filter(Boolean);
+}
+
+function updatePresenterNav(total) {
+  sidePrevBtn.disabled = total <= 0 || currentIndex <= 0;
+  sideNextBtn.disabled = total <= 0 || currentIndex >= total - 1;
 }
 
 function getPresentationContextName() {
