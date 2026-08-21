@@ -270,7 +270,7 @@ textarea {
 
 .table-editor {
   display: grid;
-  grid-template-columns: 0.95fr 1.35fr 0.85fr;
+  grid-template-columns: var(--table-columns, 0.95fr 1.35fr 0.85fr);
   gap: 4px;
   max-height: min(54vh, 520px);
   overflow-y: auto;
@@ -288,7 +288,9 @@ textarea {
   font-size: 0.92rem;
 }
 
-.table-editor input:nth-child(-n + 3) {
+.table-editor.cols-1 input:nth-child(-n + 1),
+.table-editor.cols-2 input:nth-child(-n + 2),
+.table-editor.cols-3 input:nth-child(-n + 3) {
   border-color: #80611c;
   background: #2b2518;
   color: var(--accent-strong);
@@ -762,7 +764,7 @@ textarea {
 
 .basic-table-row {
   display: grid;
-  grid-template-columns: 0.95fr 1.35fr 0.85fr;
+  grid-template-columns: var(--table-columns, 0.95fr 1.35fr 0.85fr);
 }
 
 .basic-table-row > div {

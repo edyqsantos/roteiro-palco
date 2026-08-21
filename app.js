@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v31';
+const OFFLINE_CACHE_NAME = 'palco-offline-v32';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -160,6 +160,7 @@ const editVisual = document.querySelector('#editVisual');
 const textEditorPanel = document.querySelector('#textEditorPanel');
 const tableEditorPanel = document.querySelector('#tableEditorPanel');
 const editTable = document.querySelector('#editTable');
+const tableEditorTitle = document.querySelector('#tableEditorTitle');
 const dialogTitle = document.querySelector('#dialogTitle');
 const newTopicName = document.querySelector('#newTopicName');
 const topicModeName = document.querySelector('#topicModeName');
@@ -673,12 +674,13 @@ function renderTableText(speech) {
 }
 
 function renderBasicTable(table) {
-  const headers = normalizeTableRow(table.headers, ['Coluna 1', 'Coluna 2', 'Coluna 3']);
+  const columns = getTableColumns(table);
+  const headers = normalizeTableRow(table.headers, defaultTableHeaders(columns), columns);
   const rows = table.rows.filter((row) => row.some((cell) => cell.trim()));
-  const safeRows = rows.length ? rows : [['', '', '']];
+  const safeRows = rows.length ? rows : [Array.from({ length: columns }, () => '')];
 
   return `
-    <div class="basic-table" role="table">
+    <div class="basic-table cols-${columns}" role="table" style="--table-columns: ${tableGridTemplate(columns)}">
       <div class="basic-table-row basic-table-header" role="row">
         ${headers.map((cell) => `<div role="columnheader">${formatHighlights(cell)}</div>`).join('')}
       </div>
@@ -686,7 +688,7 @@ function renderBasicTable(table) {
         .map(
           (row) => `
             <div class="basic-table-row" role="row">
-              ${normalizeTableRow(row).map((cell) => `<div role="cell">${formatHighlights(cell)}</div>`).join('')}
+              ${normalizeTableRow(row, [], columns).map((cell) => `<div role="cell">${formatHighlights(cell)}</div>`).join('')}
             </div>
           `,
         )
@@ -986,13 +988,14 @@ function renderEditPreview(speech) {
   if (speech.kind !== 'table') return formatHighlights(speech.text);
 
   const table = normalizeSpeechTable(speech.table);
+  const columns = getTableColumns(table);
   const rows = table.rows.filter((row) => row.some((cell) => cell.trim())).slice(0, 4);
-  const preview = [normalizeTableRow(table.headers), ...rows]
-    .map((row) => normalizeTableRow(row).filter(Boolean).join(' | '))
+  const preview = [normalizeTableRow(table.headers, [], columns), ...rows]
+    .map((row) => normalizeTableRow(row, [], columns).filter(Boolean).join(' | '))
     .filter(Boolean)
     .join('\n');
 
-  return `<strong class="table-preview-label">Tabela</strong>${escapeHtml(preview || 'Tabela vazia')}`;
+  return `<strong class="table-preview-label">Tabela ${columns} coluna${columns > 1 ? 's' : ''}</strong>${escapeHtml(preview || 'Tabela vazia')}`;
 }
 
 function setEditSection(section) {
@@ -1183,7 +1186,7 @@ function openSpeechDialog(index = null) {
   updateSpeechTopicSummary();
   setTopicPickerVisible(false);
   editTarget.value = speech?.target || 1;
-  editKind.value = speech?.kind === 'table' ? 'table' : 'text';
+  editKind.value = speech?.kind === 'table' ? `table${getTableColumns(speech.table)}` : 'text';
   editText.value = text;
   editVisual.innerHTML = markupToEditorHtml(text);
   renderTableEditor(speech?.table);
@@ -1202,18 +1205,27 @@ function setTopicPickerVisible(visible) {
 }
 
 function updateSpeechKindUI() {
-  const isTable = editKind.value === 'table';
+  const isTable = editKind.value.startsWith('table');
   textEditorPanel.hidden = isTable;
   tableEditorPanel.hidden = !isTable;
+  if (isTable) {
+    const columns = getSelectedTableColumns();
+    tableEditorTitle.textContent = `Tabela com ${columns} coluna${columns > 1 ? 's' : ''}`;
+    editTable.style.setProperty('--table-columns', tableGridTemplate(columns));
+    renderTableEditor(readTableEditor({ columns }));
+  }
 }
 
 function renderTableEditor(tableData = null) {
-  const table = normalizeSpeechTable(tableData);
-  const rows = [normalizeTableRow(table.headers, ['Apresentação', 'Atração', 'Horário']), ...table.rows];
+  const columns = getSelectedTableColumns();
+  const table = normalizeSpeechTable(tableData, columns);
+  const rows = [normalizeTableRow(table.headers, defaultTableHeaders(columns), columns), ...table.rows];
+  editTable.className = `table-editor cols-${columns}`;
+  editTable.style.setProperty('--table-columns', tableGridTemplate(columns));
 
   editTable.innerHTML = rows
     .map((row, rowIndex) =>
-      normalizeTableRow(row)
+      normalizeTableRow(row, [], columns)
         .map(
           (cell, colIndex) => `
             <input
@@ -1231,45 +1243,73 @@ function renderTableEditor(tableData = null) {
     .join('');
 }
 
-function readTableEditor() {
-  const rows = Array.from({ length: 16 }, () => ['', '', '']);
+function readTableEditor(options = {}) {
+  const columns = options.columns || getSelectedTableColumns();
+  const rows = Array.from({ length: 16 }, () => Array.from({ length: columns }, () => ''));
   editTable.querySelectorAll('input[data-table-row]').forEach((input) => {
     const row = Number(input.dataset.tableRow);
     const col = Number(input.dataset.tableCol);
-    if (rows[row] && col >= 0 && col < 3) rows[row][col] = input.value.trim();
+    if (rows[row] && col >= 0 && col < columns) rows[row][col] = input.value.trim();
   });
 
   return normalizeSpeechTable({
+    columns,
     headers: rows[0],
     rows: rows.slice(1),
-  });
+  }, columns);
 }
 
 function clearTableEditor() {
+  const columns = getSelectedTableColumns();
   renderTableEditor({
-    headers: ['Apresentação', 'Atração', 'Horário'],
+    columns,
+    headers: defaultTableHeaders(columns),
     rows: [],
   });
 }
 
-function normalizeSpeechTable(table = null) {
-  const headers = normalizeTableRow(table?.headers, ['Apresentação', 'Atração', 'Horário']);
+function normalizeSpeechTable(table = null, requestedColumns = null) {
+  const columns = clamp(Number(requestedColumns || table?.columns || 3), 1, 3);
+  const headers = normalizeTableRow(table?.headers, defaultTableHeaders(columns), columns);
   const sourceRows = Array.isArray(table?.rows) ? table.rows : [];
-  const rows = Array.from({ length: 15 }, (_, index) => normalizeTableRow(sourceRows[index]));
-  return { headers, rows };
+  const rows = Array.from({ length: 15 }, (_, index) => normalizeTableRow(sourceRows[index], [], columns));
+  return { columns, headers, rows };
 }
 
-function normalizeTableRow(row = [], fallback = ['', '', '']) {
-  return Array.from({ length: 3 }, (_, index) => String(row?.[index] ?? fallback[index] ?? '').trim());
+function normalizeTableRow(row = [], fallback = [], columns = 3) {
+  return Array.from({ length: columns }, (_, index) => String(row?.[index] ?? fallback[index] ?? '').trim());
 }
 
 function tableToPlainText(table) {
-  const rows = [normalizeTableRow(table.headers), ...table.rows.map((row) => normalizeTableRow(row))];
+  const columns = getTableColumns(table);
+  const rows = [normalizeTableRow(table.headers, [], columns), ...table.rows.map((row) => normalizeTableRow(row, [], columns))];
   return rows
     .filter((row, index) => index === 0 || row.some((cell) => cell.trim()))
     .map((row) => row.join(' | '))
     .join('\n')
     .trim();
+}
+
+function getSelectedTableColumns() {
+  if (editKind.value === 'table1') return 1;
+  if (editKind.value === 'table2') return 2;
+  return 3;
+}
+
+function getTableColumns(table = null) {
+  return clamp(Number(table?.columns || 3), 1, 3);
+}
+
+function defaultTableHeaders(columns) {
+  if (columns === 1) return ['Informação'];
+  if (columns === 2) return ['Item', 'Detalhe'];
+  return ['Apresentação', 'Atração', 'Horário'];
+}
+
+function tableGridTemplate(columns) {
+  if (columns === 1) return 'minmax(0, 1fr)';
+  if (columns === 2) return '0.85fr 1.15fr';
+  return '0.95fr 1.35fr 0.85fr';
 }
 
 function editCurrentSpeech() {
@@ -1285,7 +1325,7 @@ function editCurrentSpeech() {
 }
 
 function saveSpeechFromDialog() {
-  const kind = editKind.value === 'table' ? 'table' : 'text';
+  const kind = editKind.value.startsWith('table') ? 'table' : 'text';
   let text = '';
   let table = normalizeSpeechTable();
 

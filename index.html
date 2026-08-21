@@ -200,7 +200,9 @@
           Tipo da nota
           <select id="editKind">
             <option value="text">Texto normal</option>
-            <option value="table">Tabela 3 colunas</option>
+            <option value="table1">Tabela 1 coluna</option>
+            <option value="table2">Tabela 2 colunas</option>
+            <option value="table3">Tabela 3 colunas</option>
           </select>
         </label>
         <section id="textEditorPanel" class="speech-editor-panel">
@@ -236,7 +238,7 @@
         </section>
         <section id="tableEditorPanel" class="speech-editor-panel table-editor-panel" hidden>
           <div class="table-editor-head">
-            <span>Tabela com 3 colunas</span>
+            <span id="tableEditorTitle">Tabela</span>
             <button class="secondary-button mini-button" id="clearTableBtn" type="button">Limpar</button>
           </div>
           <div class="table-editor" id="editTable"></div>
