@@ -80,19 +80,12 @@
           <span>Roteiro</span>
           <strong data-current-route-label>Roteiro Principal</strong>
         </button>
-        <div class="edit-tools">
-          <button class="primary-button" id="newRouteBtn" type="button">Novo roteiro</button>
-          <button class="secondary-button" id="duplicateRouteBtn" type="button">Duplicar roteiro</button>
-          <button class="secondary-button" id="renameRouteBtn" type="button">Renomear roteiro</button>
-          <button class="secondary-button" id="routeColorBtn" type="button">Cor do roteiro</button>
-          <button class="primary-button" id="addTopicBtn" type="button">+ Botão</button>
-          <button class="secondary-button" id="addSpeechBtn" type="button">+ Fala</button>
-          <button class="secondary-button" id="topicModeBtn" type="button">Modo do botão</button>
-          <button class="secondary-button" id="renameTopicBtn" type="button">Renomear botão</button>
-          <button class="secondary-button" id="reorderTopicsBtn" type="button">Reordenar Home</button>
-          <button class="secondary-button" data-view-button="transfer" type="button">Transferir roteiro</button>
+        <div class="edit-switcher" aria-label="Área de edição">
+          <button class="edit-switch active" type="button" data-edit-section="playlists">Playlists</button>
+          <button class="edit-switch" type="button" data-edit-section="notas">Notas</button>
+          <button class="edit-switch" type="button" data-edit-section="ajustes">Ajustes</button>
         </div>
-        <section class="playlist-builder">
+        <section class="playlist-builder edit-panel active" data-edit-panel="playlists">
           <div class="section-title">
             <span>Playlist ativa</span>
             <button class="primary-button mini-button" id="newPlaylistBtn" type="button">+ Playlist</button>
@@ -107,12 +100,30 @@
           </div>
           <div class="playlist-items" id="playlistItems"></div>
         </section>
-        <div class="toolbar">
-          <select id="topicFilter" aria-label="Filtrar tópico">
-            <option value="todos">Todos os tópicos</option>
-          </select>
-        </div>
-        <div class="script-list" id="scriptList"></div>
+        <section class="note-library edit-panel" data-edit-panel="notas">
+          <div class="section-title">
+            <span>Biblioteca de notas</span>
+            <button class="primary-button mini-button" id="addSpeechBtn" type="button">+ Nota</button>
+          </div>
+          <input id="noteSearch" type="search" placeholder="Buscar nota pelo nome ou texto" aria-label="Buscar nota" />
+          <div class="toolbar note-toolbar">
+            <select id="topicFilter" aria-label="Filtrar tópico">
+              <option value="todos">Todos os tópicos</option>
+            </select>
+          </div>
+          <div class="script-list" id="scriptList"></div>
+        </section>
+        <section class="edit-tools edit-panel" data-edit-panel="ajustes">
+          <button class="primary-button" id="newRouteBtn" type="button">Novo roteiro</button>
+          <button class="secondary-button" id="duplicateRouteBtn" type="button">Duplicar roteiro</button>
+          <button class="secondary-button" id="renameRouteBtn" type="button">Renomear roteiro</button>
+          <button class="secondary-button" id="routeColorBtn" type="button">Cor do roteiro</button>
+          <button class="primary-button" id="addTopicBtn" type="button">+ Botão</button>
+          <button class="secondary-button" id="topicModeBtn" type="button">Modo do botão</button>
+          <button class="secondary-button" id="renameTopicBtn" type="button">Renomear botão</button>
+          <button class="secondary-button" id="reorderTopicsBtn" type="button">Reordenar Home</button>
+          <button class="secondary-button" data-view-button="transfer" type="button">Transferir roteiro</button>
+        </section>
       </section>
 
       <section class="view" id="transferView">

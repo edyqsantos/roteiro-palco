@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v28';
+const OFFLINE_CACHE_NAME = 'palco-offline-v29';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -121,6 +121,7 @@ let routeNameMode = 'new';
 let playlistNameMode = 'new';
 let urgentMessages = [];
 let savedEditorRange = null;
+let playlistDrag = null;
 
 const views = {
   home: document.querySelector('#homeView'),
@@ -135,6 +136,7 @@ const playlistSelect = document.querySelector('#playlistSelect');
 const playlistItems = document.querySelector('#playlistItems');
 const scriptList = document.querySelector('#scriptList');
 const topicFilter = document.querySelector('#topicFilter');
+const noteSearch = document.querySelector('#noteSearch');
 const presentTopic = document.querySelector('#presentTopic');
 const presentRouteName = document.querySelector('#presentRouteName');
 const presentCounter = document.querySelector('#presentCounter');
@@ -266,10 +268,14 @@ document.querySelector('#pullCloudBtn').addEventListener('click', pullCloudState
 document.querySelector('#copyUrgentLinkBtn').addEventListener('click', copyUrgentLink);
 
 topicFilter.addEventListener('change', renderEditList);
+noteSearch.addEventListener('input', renderEditList);
 playlistSelect.addEventListener('change', () => {
   activePlaylistId = playlistSelect.value;
   currentRoute().activePlaylistId = activePlaylistId;
   saveAndRender();
+});
+document.querySelectorAll('[data-edit-section]').forEach((button) => {
+  button.addEventListener('click', () => setEditSection(button.dataset.editSection));
 });
 syncTokenInput.addEventListener('input', () => {
   saveSyncToken();
@@ -807,12 +813,17 @@ function fitListText() {
 
 function renderEditList() {
   const selected = topicFilter.value || 'todos';
+  const search = normalizeForSearch(noteSearch.value);
   const visible = currentRoute().speeches
     .map((speech, index) => ({ ...speech, index }))
-    .filter((speech) => selected === 'todos' || speech.topic === selected);
+    .filter((speech) => selected === 'todos' || speech.topic === selected)
+    .filter((speech) => {
+      if (!search) return true;
+      return normalizeForSearch(`${speech.title || ''} ${speech.topic || ''} ${stripHighlightMarkup(speech.text || '')}`).includes(search);
+    });
 
   if (!visible.length) {
-    scriptList.innerHTML = '<p class="status">Nenhuma fala nesse tópico.</p>';
+    scriptList.innerHTML = '<p class="status">Nenhuma nota encontrada.</p>';
     return;
   }
 
@@ -821,15 +832,17 @@ function renderEditList() {
       (speech) => `
         <article class="script-item ${speech.remaining === 0 ? 'done' : ''}">
           <div class="script-head">
-            <span class="category">${escapeHtml(speech.title || speech.topic)}</span>
+            <div>
+              <strong class="script-title">${escapeHtml(speech.title || createSpeechTitle(speech, speech.index))}</strong>
+              <span class="category">${escapeHtml(speech.topic)}</span>
+            </div>
             <span class="status">${speech.remaining}/${speech.target} restantes</span>
           </div>
-          <p class="status">${escapeHtml(speech.topic)}</p>
           <div class="script-text">${formatHighlights(speech.text)}</div>
           <div class="script-actions three">
             <button class="primary-button" type="button" data-add-playlist="${speech.index}">Adicionar</button>
-            <button class="secondary-button" type="button" data-present="${speech.index}">Abrir</button>
             <button class="secondary-button" type="button" data-edit="${speech.index}">Editar</button>
+            <button class="secondary-button" type="button" data-present="${speech.index}">Abrir</button>
             <button class="secondary-button" type="button" data-reset="${speech.index}">Repor</button>
             <button class="danger-button" type="button" data-delete="${speech.index}">Excluir</button>
           </div>
@@ -876,7 +889,7 @@ function renderPlaylistItems() {
   }
 
   if (!playlist.items.length) {
-    playlistItems.innerHTML = '<p class="status">Toque em ADICIONAR nas notas abaixo para montar esta playlist.</p>';
+    playlistItems.innerHTML = '<p class="status">Abra NOTAS e toque em ADICIONAR para montar esta playlist.</p>';
     return;
   }
 
@@ -886,8 +899,9 @@ function renderPlaylistItems() {
       if (!speech) return '';
 
       return `
-        <article class="playlist-item">
+        <article class="playlist-item" data-playlist-index="${index}">
           <div class="playlist-item-head">
+            <button class="move-handle" type="button" data-playlist-drag="${index}">Mover</button>
             <div>
               <strong>${escapeHtml(index + 1)}. ${escapeHtml(speech.title || speech.topic)}</strong>
               <span>${escapeHtml(speech.topic)}</span>
@@ -917,6 +931,75 @@ function renderPlaylistItems() {
   playlistItems.querySelectorAll('[data-playlist-remove]').forEach((button) => {
     button.addEventListener('click', () => removePlaylistItem(Number(button.dataset.playlistRemove)));
   });
+  playlistItems.querySelectorAll('[data-playlist-drag]').forEach((button) => {
+    button.addEventListener('pointerdown', (event) => startPlaylistDrag(event, Number(button.dataset.playlistDrag)));
+  });
+}
+
+function setEditSection(section) {
+  document.querySelectorAll('[data-edit-section]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.editSection === section);
+  });
+  document.querySelectorAll('[data-edit-panel]').forEach((panel) => {
+    panel.classList.toggle('active', panel.dataset.editPanel === section);
+  });
+}
+
+function normalizeForSearch(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function startPlaylistDrag(event, index) {
+  event.preventDefault();
+  const item = event.target.closest('[data-playlist-index]');
+  if (!item) return;
+
+  playlistDrag = {
+    from: index,
+    to: index,
+    pointerId: event.pointerId,
+  };
+  item.classList.add('dragging');
+  item.setPointerCapture?.(event.pointerId);
+  document.addEventListener('pointermove', movePlaylistDrag);
+  document.addEventListener('pointerup', finishPlaylistDrag, { once: true });
+  document.addEventListener('pointercancel', cancelPlaylistDrag, { once: true });
+}
+
+function movePlaylistDrag(event) {
+  if (!playlistDrag || event.pointerId !== playlistDrag.pointerId) return;
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-playlist-index]');
+  if (!target || !playlistItems.contains(target)) return;
+
+  playlistItems.querySelectorAll('.drop-target').forEach((item) => item.classList.remove('drop-target'));
+  target.classList.add('drop-target');
+  playlistDrag.to = Number(target.dataset.playlistIndex);
+}
+
+function finishPlaylistDrag(event) {
+  if (!playlistDrag || event.pointerId !== playlistDrag.pointerId) return;
+  const { from, to } = playlistDrag;
+  clearPlaylistDragMarks();
+  playlistDrag = null;
+
+  if (from === to || Number.isNaN(to)) return;
+  reorderPlaylistItem(from, to);
+}
+
+function cancelPlaylistDrag() {
+  clearPlaylistDragMarks();
+  playlistDrag = null;
+}
+
+function clearPlaylistDragMarks() {
+  playlistItems.querySelectorAll('.dragging, .drop-target').forEach((item) => {
+    item.classList.remove('dragging', 'drop-target');
+  });
+  document.removeEventListener('pointermove', movePlaylistDrag);
 }
 
 function getActivePlaylist() {
@@ -997,8 +1080,16 @@ function movePlaylistItem(index, direction) {
 
   const nextIndex = index + direction;
   if (nextIndex < 0 || nextIndex >= playlist.items.length) return;
-  const [item] = playlist.items.splice(index, 1);
-  playlist.items.splice(nextIndex, 0, item);
+  reorderPlaylistItem(index, nextIndex);
+}
+
+function reorderPlaylistItem(fromIndex, toIndex) {
+  const playlist = getActivePlaylist();
+  if (!playlist) return;
+  if (fromIndex < 0 || toIndex < 0 || fromIndex >= playlist.items.length || toIndex >= playlist.items.length) return;
+
+  const [item] = playlist.items.splice(fromIndex, 1);
+  playlist.items.splice(toIndex, 0, item);
   saveAndRender();
 }
 
@@ -1970,6 +2061,10 @@ function normalizeHighlightMarkup(value) {
   }
 
   return next;
+}
+
+function stripHighlightMarkup(value) {
+  return normalizeHighlightMarkup(value).replace(/\[\[(?:(?:amarelo|azul|verde|vermelho):)?(.+?)\]\]/gi, '$1');
 }
 
 function highlightColors() {
