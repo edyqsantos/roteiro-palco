@@ -140,6 +140,7 @@ const presentRouteName = document.querySelector('#presentRouteName');
 const presentCounter = document.querySelector('#presentCounter');
 const presentText = document.querySelector('#presentText');
 const repeatText = document.querySelector('#repeatText');
+const editCurrentBtn = document.querySelector('#editCurrentBtn');
 const speechDialog = document.querySelector('#speechDialog');
 const topicDialog = document.querySelector('#topicDialog');
 const topicModeDialog = document.querySelector('#topicModeDialog');
@@ -213,7 +214,7 @@ document.querySelector('#newPlaylistBtn').addEventListener('click', () => openPl
 document.querySelector('#duplicatePlaylistBtn').addEventListener('click', duplicateActivePlaylist);
 document.querySelector('#renamePlaylistBtn').addEventListener('click', () => openPlaylistDialog('rename'));
 document.querySelector('#presentPlaylistBtn').addEventListener('click', () => openPlaylist(activePlaylistId));
-document.querySelector('#editCurrentBtn').addEventListener('click', editCurrentSpeech);
+editCurrentBtn.addEventListener('click', editCurrentSpeech);
 document.querySelector('#prevBtn').addEventListener('click', () => movePresenter(-1));
 document.querySelector('#nextBtn').addEventListener('click', () => movePresenter(1));
 document.querySelector('#doneBtn').addEventListener('click', markCurrentSpoken);
@@ -564,6 +565,7 @@ function renderPresenter() {
     presentText.classList.remove('list-mode', 'sponsor-mode', 'rich-mode');
     presentText.textContent = presentationMode === 'playlist' ? 'Essa playlist ainda não tem notas.' : 'Nenhuma fala nesse botão ainda.';
     repeatText.textContent = presentationMode === 'playlist' ? 'Adicione notas em EDITAR.' : 'Crie uma fala para este tópico.';
+    editCurrentBtn.textContent = presentationMode === 'playlist' ? 'Montar' : 'Editar';
     return;
   }
 
@@ -572,6 +574,7 @@ function renderPresenter() {
   presentCounter.textContent = `${currentIndex + 1}/${entries.length}`;
   renderPresentText(speech);
   repeatText.textContent = `Restam ${speech.remaining} de ${speech.target}`;
+  editCurrentBtn.textContent = 'Editar';
 }
 
 function getPresentationEntries() {
@@ -1044,7 +1047,14 @@ function setTopicPickerVisible(visible) {
 
 function editCurrentSpeech() {
   const entry = getPresentationEntries()[currentIndex];
-  if (entry?.speechIndex >= 0) openSpeechDialog(entry.speechIndex);
+  if (entry?.speechIndex >= 0) {
+    openSpeechDialog(entry.speechIndex);
+    return;
+  }
+
+  if (presentationMode === 'playlist') {
+    setView('edit');
+  }
 }
 
 function saveSpeechFromDialog() {
