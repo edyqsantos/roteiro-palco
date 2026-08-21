@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v33';
+const OFFLINE_CACHE_NAME = 'palco-offline-v34';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 const defaultTopics = [
@@ -371,7 +371,7 @@ function normalizeState(nextState) {
         id: speech.id || createId(),
         title: speech.title || createSpeechTitle(speech, speechIndex),
         topic: normalizeTopicName(speech.topic || topics[0] || 'Informes'),
-        kind: speech.kind === 'table' ? 'table' : 'text',
+        kind: ['table', 'sponsor'].includes(speech.kind) ? speech.kind : 'text',
         text: speech.text || '',
         table: normalizeSpeechTable(speech.table),
         target,
@@ -610,7 +610,7 @@ function renderPresentText(speech) {
 
   const text = speech.text || '';
   const topic = speech.topic || activeTopic;
-  if (currentRoute().topicModes?.[topic] === 'sponsor') {
+  if (speech.kind === 'sponsor' || currentRoute().topicModes?.[topic] === 'sponsor') {
     renderSponsorText(text);
     return;
   }
@@ -838,14 +838,12 @@ function fitListText() {
 }
 
 function renderEditList() {
-  const selected = topicFilter.value || 'todos';
   const search = normalizeForSearch(noteSearch.value);
   const visible = currentRoute().speeches
     .map((speech, index) => ({ ...speech, index }))
-    .filter((speech) => selected === 'todos' || speech.topic === selected)
     .filter((speech) => {
       if (!search) return true;
-      return normalizeForSearch(`${speech.title || ''} ${speech.topic || ''} ${stripHighlightMarkup(speech.text || '')}`).includes(search);
+      return normalizeForSearch(speech.title || createSpeechTitle(speech, speech.index)).includes(search);
     });
 
   if (!visible.length) {
@@ -860,14 +858,12 @@ function renderEditList() {
           <div class="script-head">
             <div>
               <strong class="script-title">${escapeHtml(speech.title || createSpeechTitle(speech, speech.index))}</strong>
-              <span class="category">${escapeHtml(speech.topic)}</span>
+              <span class="category">${escapeHtml(getSpeechKindLabel(speech))}</span>
             </div>
           </div>
-          <div class="script-text">${renderEditPreview(speech)}</div>
           <div class="script-actions three">
             <button class="primary-button" type="button" data-add-playlist="${speech.index}">Adicionar</button>
             <button class="secondary-button" type="button" data-edit="${speech.index}">Editar</button>
-            <button class="secondary-button" type="button" data-present="${speech.index}">Abrir</button>
             <button class="danger-button" type="button" data-delete="${speech.index}">Excluir</button>
           </div>
         </article>
@@ -877,15 +873,6 @@ function renderEditList() {
 
   scriptList.querySelectorAll('[data-add-playlist]').forEach((button) => {
     button.addEventListener('click', () => addSpeechToActivePlaylist(Number(button.dataset.addPlaylist)));
-  });
-
-  scriptList.querySelectorAll('[data-present]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const speech = currentRoute().speeches[Number(button.dataset.present)];
-      activeTopic = speech.topic;
-      currentIndex = getSpeechesByTopic(activeTopic).findIndex((item) => item === speech);
-      setView('present');
-    });
   });
 
   scriptList.querySelectorAll('[data-edit]').forEach((button) => {
@@ -920,9 +907,8 @@ function renderPlaylistItems() {
             <button class="move-handle" type="button" data-playlist-drag="${index}">Mover</button>
             <div>
               <strong>${escapeHtml(index + 1)}. ${escapeHtml(speech.title || speech.topic)}</strong>
-              <span>${escapeHtml(speech.topic)}</span>
+              <span>${escapeHtml(getSpeechKindLabel(speech))}</span>
             </div>
-            <span>${speech.remaining}/${speech.target}</span>
           </div>
           <div class="playlist-item-actions">
             <button class="secondary-button" type="button" data-playlist-up="${index}">Subir</button>
@@ -964,6 +950,15 @@ function renderEditPreview(speech) {
     .join('\n');
 
   return `<strong class="table-preview-label">Tabela ${columns} coluna${columns > 1 ? 's' : ''}</strong>${escapeHtml(preview || 'Tabela vazia')}`;
+}
+
+function getSpeechKindLabel(speech) {
+  if (speech.kind === 'sponsor') return 'Patrocinadores';
+  if (speech.kind === 'table') {
+    const columns = getTableColumns(speech.table);
+    return `Tabela ${columns} coluna${columns > 1 ? 's' : ''}`;
+  }
+  return 'Texto';
 }
 
 function setEditSection(section) {
@@ -1154,7 +1149,7 @@ function openSpeechDialog(index = null) {
   updateSpeechTopicSummary();
   setTopicPickerVisible(false);
   editTarget.value = speech?.target || 1;
-  editKind.value = speech?.kind === 'table' ? `table${getTableColumns(speech.table)}` : 'text';
+  editKind.value = getEditKindValue(speech);
   editText.value = text;
   editVisual.innerHTML = markupToEditorHtml(text);
   renderTableEditor(speech?.table);
@@ -1264,6 +1259,18 @@ function getSelectedTableColumns() {
   return 3;
 }
 
+function getEditKindValue(speech) {
+  if (speech?.kind === 'table') return `table${getTableColumns(speech.table)}`;
+  if (speech?.kind === 'sponsor') return 'sponsor';
+  return 'text';
+}
+
+function getKindFromEditor() {
+  if (editKind.value.startsWith('table')) return 'table';
+  if (editKind.value === 'sponsor') return 'sponsor';
+  return 'text';
+}
+
 function getTableColumns(table = null) {
   return clamp(Number(table?.columns || 3), 1, 3);
 }
@@ -1293,7 +1300,7 @@ function editCurrentSpeech() {
 }
 
 function saveSpeechFromDialog() {
-  const kind = editKind.value.startsWith('table') ? 'table' : 'text';
+  const kind = getKindFromEditor();
   let text = '';
   let table = normalizeSpeechTable();
 
@@ -1309,7 +1316,7 @@ function saveSpeechFromDialog() {
 
   const target = clamp(Number(editTarget.value || 1), 1, 20);
   const route = currentRoute();
-  const topic = editTopic.value || route.topics[0];
+  const topic = editTopic.value || route.topics[0] || 'Notas';
   const previous = editingIndex === null ? null : route.speeches[editingIndex];
   const title = editTitle.value.trim() || createSpeechTitle({ topic, text }, route.speeches.length);
   const spoken = previous ? previous.target - previous.remaining : 0;

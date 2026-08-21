@@ -101,8 +101,8 @@
             <span>Biblioteca de notas</span>
             <button class="primary-button mini-button" id="addSpeechBtn" type="button">+ Nota</button>
           </div>
-          <input id="noteSearch" type="search" placeholder="Buscar nota pelo nome ou texto" aria-label="Buscar nota" />
-          <div class="toolbar note-toolbar">
+          <input id="noteSearch" type="search" placeholder="Buscar nota pelo nome" aria-label="Buscar nota" />
+          <div class="toolbar note-toolbar" hidden>
             <select id="topicFilter" aria-label="Filtrar tópico">
               <option value="todos">Todos os tópicos</option>
             </select>
@@ -114,10 +114,10 @@
           <button class="secondary-button" id="duplicateRouteBtn" type="button">Duplicar roteiro</button>
           <button class="secondary-button" id="renameRouteBtn" type="button">Renomear roteiro</button>
           <button class="secondary-button" id="routeColorBtn" type="button">Cor do roteiro</button>
-          <button class="primary-button" id="addTopicBtn" type="button">+ Botão</button>
-          <button class="secondary-button" id="topicModeBtn" type="button">Modo do botão</button>
-          <button class="secondary-button" id="renameTopicBtn" type="button">Renomear botão</button>
-          <button class="secondary-button" id="reorderTopicsBtn" type="button">Reordenar Home</button>
+          <button class="primary-button" id="addTopicBtn" type="button" hidden>+ Botão</button>
+          <button class="secondary-button" id="topicModeBtn" type="button" hidden>Modo do botão</button>
+          <button class="secondary-button" id="renameTopicBtn" type="button" hidden>Renomear botão</button>
+          <button class="secondary-button" id="reorderTopicsBtn" type="button" hidden>Reordenar Home</button>
           <button class="secondary-button" data-view-button="transfer" type="button">Transferir roteiro</button>
         </section>
       </section>
@@ -177,7 +177,7 @@
           Nome da nota
           <input id="editTitle" type="text" maxlength="50" placeholder="Ex: Abraço 3" />
         </label>
-        <div class="topic-editor-row">
+        <div class="topic-editor-row" hidden>
           <div>
             <span>Tópico</span>
             <strong id="editTopicSummary">Informes</strong>
@@ -196,6 +196,7 @@
           Tipo da nota
           <select id="editKind">
             <option value="text">Texto normal</option>
+            <option value="sponsor">Patrocinadores</option>
             <option value="table1">Tabela 1 coluna</option>
             <option value="table2">Tabela 2 colunas</option>
             <option value="table3">Tabela 3 colunas</option>
