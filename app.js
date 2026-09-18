@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v40';
+const OFFLINE_CACHE_NAME = 'palco-offline-v41';
 const OFFLINE_FILES = [
   'index.html',
   'styles.css',
@@ -11,10 +11,10 @@ const OFFLINE_FILES = [
   'manifest.json',
   'service-worker.js',
   'icon.svg',
-  'favicon-32.png',
-  'apple-touch-icon.png',
-  'icon-192.png',
-  'icon-512.png',
+  'favicon-32.png?v=2',
+  'apple-touch-icon.png?v=2',
+  'icon-192.png?v=2',
+  'icon-512.png?v=2',
 ];
 
 let state = loadState();
