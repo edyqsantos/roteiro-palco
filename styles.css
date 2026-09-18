@@ -170,6 +170,14 @@ h2 {
   padding: 8px 0;
 }
 
+.tabs.presenting {
+  grid-template-columns: 1fr;
+}
+
+.tab[hidden] {
+  display: none;
+}
+
 .tab.active {
   background: var(--accent);
   color: #211a0a;
@@ -763,8 +771,15 @@ textarea {
   border-right: 1px solid #5c6f2b;
   border-bottom: 1px solid #5c6f2b;
   padding: 6px 8px;
-  overflow-wrap: break-word;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
   line-height: 1.18;
+}
+
+.compact-table .basic-table-row > div {
+  padding: 4px 5px;
+  line-height: 1.12;
 }
 
 .basic-table-row > div:last-child {

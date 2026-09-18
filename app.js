@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v37';
+const OFFLINE_CACHE_NAME = 'palco-offline-v38';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 let state = loadState();
@@ -46,6 +46,7 @@ const textEditorPanel = document.querySelector('#textEditorPanel');
 const tableEditorPanel = document.querySelector('#tableEditorPanel');
 const editTable = document.querySelector('#editTable');
 const tableEditorTitle = document.querySelector('#tableEditorTitle');
+const tableLayout = document.querySelector('#tableLayout');
 const dialogTitle = document.querySelector('#dialogTitle');
 const backupText = document.querySelector('#backupText');
 const backupScope = document.querySelector('#backupScope');
@@ -102,7 +103,8 @@ presenterCard.addEventListener('pointermove', movePresenterSwipe);
 presenterCard.addEventListener('pointerup', finishPresenterSwipe);
 presenterCard.addEventListener('pointercancel', cancelPresenterSwipe);
 document.querySelector('#fontRange').addEventListener('input', (event) => {
-  const maxSize = window.innerWidth <= 460 ? 46 : 60;
+  const compactTable = presentText.classList.contains('table-mode') && presentText.classList.contains('compact-table');
+  const maxSize = compactTable ? (window.innerWidth <= 460 ? 18 : 22) : window.innerWidth <= 460 ? 46 : 60;
   const size = Math.min(Number(event.target.value), maxSize);
   applyPresentFontSize(size);
 });
@@ -280,8 +282,10 @@ function currentRoute() {
 }
 
 function setView(name) {
+  document.querySelector('.tabs').classList.toggle('presenting', name === 'present');
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.classList.toggle('active', tab.dataset.view === name);
+    tab.hidden = name === 'present' && tab.dataset.view === 'edit';
   });
 
   Object.entries(views).forEach(([viewName, view]) => {
@@ -452,7 +456,11 @@ function renderPresentText(speech) {
 
 function applyPresentFontSize(size) {
   presentText.style.fontSize = `${size}px`;
-  fitListText();
+  if (presentText.classList.contains('table-mode')) {
+    fitTableText();
+  } else {
+    fitListText();
+  }
 }
 
 function renderPresentLine(line) {
@@ -464,11 +472,25 @@ function renderTableText(speech) {
   const table = normalizeSpeechTable(speech.table);
   presentText.classList.remove('list-mode', 'sponsor-mode', 'rich-mode');
   presentText.classList.add('table-mode');
+  presentText.classList.toggle('compact-table', table.layout === 'compact');
   presentText.innerHTML = renderBasicTable(table);
 
   const sliderValue = Number(document.querySelector('#fontRange').value || 28);
   const maxSize = window.innerWidth <= 460 ? 34 : 42;
-  applyPresentFontSize(Math.min(sliderValue, maxSize));
+  const compactSize = window.innerWidth <= 460 ? 18 : 22;
+  applyPresentFontSize(table.layout === 'compact' ? compactSize : Math.min(sliderValue, maxSize));
+}
+
+function fitTableText() {
+  const minSize = presentText.classList.contains('compact-table') ? 14 : 18;
+  let size = Number.parseFloat(presentText.style.fontSize) || 28;
+  const cells = [...presentText.querySelectorAll('.basic-table-row > div')];
+  if (!cells.length) return;
+
+  while (size > minSize && cells.some((cell) => cell.scrollWidth > cell.clientWidth + 1)) {
+    size -= 1;
+    presentText.style.fontSize = `${size}px`;
+  }
 }
 
 function renderBasicTable(table) {
@@ -962,6 +984,7 @@ function openSpeechDialog(index = null) {
   const text = normalizeHighlightMarkup(speech?.text || '');
   editTitle.value = speech?.title || '';
   editKind.value = getEditKindValue(speech);
+  tableLayout.value = speech?.table?.layout === 'compact' ? 'compact' : 'comfortable';
   editText.value = text;
   editVisual.innerHTML = markupToEditorHtml(text);
   renderTableEditor(speech?.table);
@@ -1020,6 +1043,7 @@ function readTableEditor(options = {}) {
 
   return normalizeSpeechTable({
     columns,
+    layout: tableLayout.value,
     headers: rows[0],
     rows: rows.slice(1),
   }, columns);
@@ -1029,6 +1053,7 @@ function clearTableEditor() {
   const columns = getSelectedTableColumns();
   renderTableEditor({
     columns,
+    layout: tableLayout.value,
     headers: defaultTableHeaders(columns),
     rows: [],
   });
@@ -1036,10 +1061,11 @@ function clearTableEditor() {
 
 function normalizeSpeechTable(table = null, requestedColumns = null) {
   const columns = clamp(Number(requestedColumns || table?.columns || 3), 1, 3);
+  const layout = table?.layout === 'compact' ? 'compact' : 'comfortable';
   const headers = normalizeTableRow(table?.headers, defaultTableHeaders(columns), columns);
   const sourceRows = Array.isArray(table?.rows) ? table.rows : [];
   const rows = Array.from({ length: 15 }, (_, index) => normalizeTableRow(sourceRows[index], [], columns));
-  return { columns, headers, rows };
+  return { columns, layout, headers, rows };
 }
 
 function normalizeTableRow(row = [], fallback = [], columns = 3) {
