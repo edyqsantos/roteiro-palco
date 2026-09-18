@@ -3,8 +3,19 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v39';
-const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
+const OFFLINE_CACHE_NAME = 'palco-offline-v40';
+const OFFLINE_FILES = [
+  'index.html',
+  'styles.css',
+  'app.js',
+  'manifest.json',
+  'service-worker.js',
+  'icon.svg',
+  'favicon-32.png',
+  'apple-touch-icon.png',
+  'icon-192.png',
+  'icon-512.png',
+];
 
 let state = loadState();
 let activePlaylistId = '';
