@@ -174,7 +174,7 @@ async function handleSyncRequest(req, res) {
   sendJson(res, 405, { ok: false, error: 'Método não permitido.' });
 }
 
-async function handleUrgentRequest(req, res) {
+async function handleUrgentRequest(req, res, url) {
   if (!isSyncAuthorized(req)) {
     sendJson(res, 401, { ok: false, error: 'Código de sincronização inválido.' });
     return;
@@ -186,7 +186,29 @@ async function handleUrgentRequest(req, res) {
     return;
   }
 
-  if (req.method !== 'GET') {
+  if (req.method === 'DELETE') {
+    if (url.pathname === '/api/urgent') {
+      const result = await db.query('DELETE FROM palco_urgent');
+      sendJson(res, 200, { ok: true, deleted: result.rowCount });
+      return;
+    }
+
+    const id = decodeURIComponent(url.pathname.replace('/api/urgent/', ''));
+    if (!id || id === '/api/urgent') {
+      sendJson(res, 400, { ok: false, error: 'Recado inválido.' });
+      return;
+    }
+
+    const result = await db.query('DELETE FROM palco_urgent WHERE id = $1', [id]);
+    if (!result.rowCount) {
+      sendJson(res, 404, { ok: false, error: 'Recado não encontrado.' });
+      return;
+    }
+    sendJson(res, 200, { ok: true, deleted: 1 });
+    return;
+  }
+
+  if (req.method !== 'GET' || url.pathname !== '/api/urgent') {
     sendJson(res, 405, { ok: false, error: 'Método não permitido.' });
     return;
   }
@@ -416,9 +438,9 @@ const server = http.createServer(async (req, res) => {
       }
       return;
     }
-    if (url.pathname === '/api/urgent') {
+    if (url.pathname === '/api/urgent' || url.pathname.startsWith('/api/urgent/')) {
       try {
-        await handleUrgentRequest(req, res);
+        await handleUrgentRequest(req, res, url);
       } catch (error) {
         sendJson(res, 500, { ok: false, error: error.message || 'Erro no urgente.' });
       }

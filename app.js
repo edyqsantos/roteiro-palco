@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v43';
+const OFFLINE_CACHE_NAME = 'palco-offline-v44';
 const OFFLINE_FILES = [
   'index.html',
   'styles.css',
@@ -175,6 +175,7 @@ editKind.addEventListener('change', updateSpeechKindUI);
 document.querySelector('#clearTableBtn').addEventListener('click', clearTableEditor);
 urgentBtn.addEventListener('click', openUrgentDialog);
 document.querySelector('#refreshUrgentBtn').addEventListener('click', fetchUrgentMessages);
+document.querySelector('#deleteAllUrgentBtn').addEventListener('click', deleteAllUrgentMessages);
 
 document.querySelector('#saveSpeechBtn').addEventListener('click', (event) => {
   event.preventDefault();
@@ -1704,6 +1705,7 @@ function renderUrgentList() {
           <div class="urgent-item-actions">
             <button class="primary-button" type="button" data-urgent-note="${escapeHtml(message.id)}">Virar nota</button>
             <button class="secondary-button" type="button" data-urgent-playlist="${escapeHtml(message.id)}">Na playlist</button>
+            <button class="danger-button" type="button" data-urgent-delete="${escapeHtml(message.id)}">Excluir</button>
           </div>
         </article>
       `,
@@ -1716,6 +1718,42 @@ function renderUrgentList() {
   urgentList.querySelectorAll('[data-urgent-playlist]').forEach((button) => {
     button.addEventListener('click', () => createNoteFromUrgent(button.dataset.urgentPlaylist, true));
   });
+  urgentList.querySelectorAll('[data-urgent-delete]').forEach((button) => {
+    button.addEventListener('click', () => deleteUrgentMessage(button.dataset.urgentDelete));
+  });
+}
+
+async function deleteUrgentMessage(messageId) {
+  if (!window.confirm('Excluir este recado urgente?')) return;
+  await deleteUrgentMessages(`./api/urgent/${encodeURIComponent(messageId)}`, 'Recado excluído.');
+}
+
+async function deleteAllUrgentMessages() {
+  if (!urgentMessages.length) return;
+  if (!window.confirm('Excluir TODOS os recados urgentes? Esta ação não pode ser desfeita.')) return;
+  await deleteUrgentMessages('./api/urgent', 'Todos os recados foram excluídos.');
+}
+
+async function deleteUrgentMessages(url, successMessage) {
+  const token = syncTokenInput.value.trim();
+  if (!token) {
+    urgentHint.textContent = 'Informe o código de sincronização neste aparelho.';
+    return;
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: buildSyncHeaders(token),
+      cache: 'no-store',
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Não consegui excluir o recado.');
+    urgentHint.textContent = successMessage;
+    await fetchUrgentMessages();
+  } catch (error) {
+    urgentHint.textContent = error.message || 'Não consegui excluir o recado.';
+  }
 }
 
 function createNoteFromUrgent(messageId, addToPlaylist) {
