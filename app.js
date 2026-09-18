@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v42';
+const OFFLINE_CACHE_NAME = 'palco-offline-v43';
 const OFFLINE_FILES = [
   'index.html',
   'styles.css',
@@ -1657,6 +1657,7 @@ async function fetchUrgentMessages() {
     const response = await fetch('./api/urgent', {
       method: 'GET',
       headers: buildSyncHeaders(token),
+      cache: 'no-store',
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || 'Não consegui buscar urgentes.');

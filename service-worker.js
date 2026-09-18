@@ -1,4 +1,4 @@
-const CACHE_NAME = 'palco-offline-v42';
+const CACHE_NAME = 'palco-offline-v43';
 const APP_SHELL = [
   './',
   './index.html',
@@ -43,6 +43,8 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/api/')) return;
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
