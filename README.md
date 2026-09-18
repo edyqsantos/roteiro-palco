@@ -9,6 +9,7 @@ App pessoal para locução de palco, com PWA/offline para uso no iPhone.
 - A playlist guarda apenas a ordem das notas e pode repetir a mesma nota.
 - A apresentação sempre abre uma playlist e navega por setas ou gesto lateral.
 - O estado principal fica no aparelho e pode ser sincronizado com a nuvem.
+- Links individuais permitem que clientes enviem recados urgentes; com internet, o painel verifica novas mensagens a cada poucos segundos.
 
 Depois de publicar em HTTPS, abra o link no Safari do iPhone, espere aparecer "OFFLINE PRONTO" e use "Adicionar à Tela de Início".
 

@@ -3,7 +3,7 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v38';
+const OFFLINE_CACHE_NAME = 'palco-offline-v39';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
 
 let state = loadState();
@@ -14,6 +14,7 @@ let editingIndex = null;
 let routeNameMode = 'new';
 let playlistNameMode = 'new';
 let urgentMessages = [];
+let urgentClients = [];
 let savedEditorRange = null;
 let playlistDrag = null;
 
@@ -51,7 +52,8 @@ const dialogTitle = document.querySelector('#dialogTitle');
 const backupText = document.querySelector('#backupText');
 const backupScope = document.querySelector('#backupScope');
 const syncTokenInput = document.querySelector('#syncTokenInput');
-const urgentLinkInput = document.querySelector('#urgentLinkInput');
+const urgentClientName = document.querySelector('#urgentClientName');
+const urgentClientList = document.querySelector('#urgentClientList');
 const cloudStatus = document.querySelector('#cloudStatus');
 const offlineStatus = document.querySelector('#offlineStatus');
 const restorePointStatus = document.querySelector('#restorePointStatus');
@@ -143,7 +145,7 @@ document.querySelector('#saveRestorePointBtn').addEventListener('click', saveRes
 document.querySelector('#restorePointBtn').addEventListener('click', restoreSavedPoint);
 document.querySelector('#pushCloudBtn').addEventListener('click', pushCloudState);
 document.querySelector('#pullCloudBtn').addEventListener('click', pullCloudState);
-document.querySelector('#copyUrgentLinkBtn').addEventListener('click', copyUrgentLink);
+document.querySelector('#createUrgentClientBtn').addEventListener('click', createUrgentClient);
 
 noteSearch.addEventListener('input', renderEditList);
 playlistSelect.addEventListener('change', () => {
@@ -154,8 +156,8 @@ document.querySelectorAll('[data-edit-section]').forEach((button) => {
 });
 syncTokenInput.addEventListener('input', () => {
   saveSyncToken();
-  renderUrgentLink();
   fetchUrgentMessages();
+  fetchUrgentClients();
 });
 document.addEventListener('selectionchange', rememberEditorSelection);
 editKind.addEventListener('change', updateSpeechKindUI);
@@ -1330,24 +1332,6 @@ async function copyBackup() {
   }
 }
 
-async function copyUrgentLink() {
-  renderUrgentLink();
-  if (!urgentLinkInput.value.trim()) {
-    alert('DIGITE O CÓDIGO DE SINCRONIZAÇÃO PRIMEIRO.');
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(urgentLinkInput.value);
-    alert('LINK URGENTE COPIADO.');
-  } catch {
-    urgentLinkInput.focus();
-    urgentLinkInput.select();
-    urgentLinkInput.setSelectionRange(0, urgentLinkInput.value.length);
-    alert('O LINK FOI SELECIONADO. AGORA COPIE.');
-  }
-}
-
 function importBackup() {
   const raw = backupText.value.trim();
   if (!raw) return;
@@ -1453,12 +1437,114 @@ function saveSyncToken() {
 
 function loadSyncToken() {
   syncTokenInput.value = localStorage.getItem(CLOUD_TOKEN_KEY) || '';
-  renderUrgentLink();
 }
 
-function renderUrgentLink() {
+async function fetchUrgentClients() {
   const token = syncTokenInput.value.trim();
-  urgentLinkInput.value = token ? `${window.location.origin}/api/urgent-submit?token=${encodeURIComponent(token)}` : '';
+  if (!token) {
+    urgentClients = [];
+    renderUrgentClients();
+    return;
+  }
+
+  try {
+    const response = await fetch('./api/urgent-clients', { headers: buildSyncHeaders(token) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Não consegui buscar os links.');
+    urgentClients = Array.isArray(result.clients) ? result.clients : [];
+    renderUrgentClients();
+  } catch (error) {
+    urgentClientList.innerHTML = `<p class="status">${escapeHtml(error.message || 'Não consegui buscar os links.')}</p>`;
+  }
+}
+
+async function createUrgentClient() {
+  const token = syncTokenInput.value.trim();
+  const name = urgentClientName.value.trim();
+  if (!token) {
+    alert('DIGITE O CÓDIGO DE SINCRONIZAÇÃO PRIMEIRO.');
+    return;
+  }
+  if (!name) {
+    alert('DIGITE O NOME DO CLIENTE.');
+    return;
+  }
+
+  try {
+    const response = await fetch('./api/urgent-clients', {
+      method: 'POST',
+      headers: buildSyncHeaders(token),
+      body: JSON.stringify({ name }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Não consegui criar o link.');
+    urgentClientName.value = '';
+    await fetchUrgentClients();
+    await copyText(result.client.url, 'LINK DO CLIENTE COPIADO.');
+  } catch (error) {
+    alert(error.message || 'NÃO CONSEGUI CRIAR O LINK.');
+  }
+}
+
+function renderUrgentClients() {
+  if (!syncTokenInput.value.trim()) {
+    urgentClientList.innerHTML = '<p class="status">Digite o código de sincronização para administrar os links.</p>';
+    return;
+  }
+  if (!urgentClients.length) {
+    urgentClientList.innerHTML = '<p class="status">Nenhum link de cliente criado.</p>';
+    return;
+  }
+
+  urgentClientList.innerHTML = urgentClients
+    .map(
+      (client) => `
+        <article class="client-link-item">
+          <strong>${escapeHtml(client.name)}</strong>
+          <div>
+            <button class="secondary-button" type="button" data-copy-client="${escapeHtml(client.id)}">Copiar link</button>
+            <button class="danger-button" type="button" data-delete-client="${escapeHtml(client.id)}">Desativar</button>
+          </div>
+        </article>
+      `,
+    )
+    .join('');
+
+  urgentClientList.querySelectorAll('[data-copy-client]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const client = urgentClients.find((item) => item.id === button.dataset.copyClient);
+      if (client) copyText(client.url, 'LINK DO CLIENTE COPIADO.');
+    });
+  });
+  urgentClientList.querySelectorAll('[data-delete-client]').forEach((button) => {
+    button.addEventListener('click', () => deleteUrgentClient(button.dataset.deleteClient));
+  });
+}
+
+async function deleteUrgentClient(clientId) {
+  const client = urgentClients.find((item) => item.id === clientId);
+  if (!client || !confirm(`DESATIVAR O LINK DE "${client.name}"?`)) return;
+
+  try {
+    const response = await fetch(`./api/urgent-clients/${encodeURIComponent(clientId)}`, {
+      method: 'DELETE',
+      headers: buildSyncHeaders(syncTokenInput.value.trim()),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Não consegui desativar o link.');
+    await fetchUrgentClients();
+  } catch (error) {
+    alert(error.message || 'NÃO CONSEGUI DESATIVAR O LINK.');
+  }
+}
+
+async function copyText(value, successMessage) {
+  try {
+    await navigator.clipboard.writeText(value);
+    alert(successMessage);
+  } catch {
+    prompt('COPIE O LINK:', value);
+  }
 }
 
 function renderCloudStatus(message = null) {
@@ -1548,6 +1634,7 @@ function saveCloudSync(direction, serverDate = null) {
 }
 
 async function fetchUrgentMessages() {
+  if (!navigator.onLine) return;
   const token = syncTokenInput.value.trim();
   if (!token) {
     urgentMessages = [];
@@ -1595,7 +1682,10 @@ function renderUrgentList() {
       (message) => `
         <article class="urgent-item">
           <div class="urgent-item-head">
-            <strong>${escapeHtml(message.title || 'Recado urgente')}</strong>
+            <div>
+              <strong>${escapeHtml(message.senderName || 'Cliente')}</strong>
+              <small>${escapeHtml(message.title || 'Recado urgente')}</small>
+            </div>
             <span>${formatUrgentDate(message.createdAt)}</span>
           </div>
           <div class="script-text">${formatHighlights(message.text || '')}</div>
@@ -1887,7 +1977,15 @@ renderRestorePointStatus();
 loadSyncToken();
 renderCloudStatus();
 fetchUrgentMessages();
-setInterval(fetchUrgentMessages, 45000);
+fetchUrgentClients();
+setInterval(fetchUrgentMessages, 6000);
+window.addEventListener('online', () => {
+  fetchUrgentMessages();
+  fetchUrgentClients();
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) fetchUrgentMessages();
+});
 registerOfflineApp();
 
 function registerOfflineApp() {

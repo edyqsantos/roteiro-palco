@@ -100,6 +100,12 @@ h1 {
 
 .urgent-button.has-urgent {
   animation: urgentPulse 0.9s infinite alternate;
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  z-index: 30;
+  background: #8b1717;
+  border-color: #ff8a80;
 }
 
 @keyframes urgentPulse {
@@ -463,6 +469,17 @@ textarea {
 
 .urgent-item-head {
   grid-template-columns: 1fr auto;
+}
+
+.urgent-item-head div {
+  display: grid;
+  gap: 3px;
+}
+
+.urgent-item-head small {
+  color: var(--accent-strong);
+  font-size: 0.85rem;
+  font-weight: 800;
 }
 
 .move-handle {
@@ -951,6 +968,42 @@ input[type='range'] {
   gap: 10px;
 }
 
+.client-links-head {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.client-links-head h2 {
+  margin-bottom: 5px;
+}
+
+.client-link-create,
+.client-link-list {
+  display: grid;
+  gap: 8px;
+}
+
+.client-link-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #171b20;
+  padding: 10px;
+}
+
+.client-link-item strong {
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.client-link-item div {
+  display: flex;
+  gap: 6px;
+}
+
 dialog {
   width: min(calc(100% - 24px), 520px);
   border: 1px solid var(--line);
@@ -1041,6 +1094,15 @@ dialog::backdrop {
 
   .playlist-item-actions,
   .urgent-item-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .client-link-item {
+    grid-template-columns: 1fr;
+  }
+
+  .client-link-item div {
+    display: grid;
     grid-template-columns: 1fr 1fr;
   }
 

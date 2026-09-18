@@ -149,11 +149,18 @@
             <button class="secondary-button" id="pullCloudBtn" type="button">Buscar da nuvem</button>
           </div>
           <p class="backup-status" id="cloudStatus">Nuvem ainda não sincronizada neste aparelho.</p>
-          <label>
-            Link secreto para urgentes
-            <input id="urgentLinkInput" type="text" readonly placeholder="Digite o código acima para gerar o link" />
-          </label>
-          <button class="secondary-button full" id="copyUrgentLinkBtn" type="button">Copiar link urgente</button>
+          <div class="client-links-head">
+            <h2>Links dos clientes</h2>
+            <p>Crie um link individual para cada pessoa autorizada a enviar recados urgentes.</p>
+          </div>
+          <div class="client-link-create">
+            <label>
+              Nome do cliente
+              <input id="urgentClientName" type="text" maxlength="60" placeholder="Ex: Diego - Produção" />
+            </label>
+            <button class="primary-button" id="createUrgentClientBtn" type="button">Criar link</button>
+          </div>
+          <div class="client-link-list" id="urgentClientList"></div>
         </div>
       </section>
     </main>

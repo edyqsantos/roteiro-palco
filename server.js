@@ -1,6 +1,7 @@
 const http = require('node:http');
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const PORT = Number(process.env.PORT || 3000);
 const APP_USER = process.env.APP_USER || '';
@@ -100,6 +101,19 @@ async function getDb() {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       text TEXT NOT NULL,
+      client_id TEXT,
+      sender_name TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await dbPool.query('ALTER TABLE palco_urgent ADD COLUMN IF NOT EXISTS client_id TEXT');
+  await dbPool.query('ALTER TABLE palco_urgent ADD COLUMN IF NOT EXISTS sender_name TEXT');
+  await dbPool.query(`
+    CREATE TABLE IF NOT EXISTS palco_urgent_clients (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      access_key TEXT UNIQUE NOT NULL,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
@@ -178,7 +192,7 @@ async function handleUrgentRequest(req, res) {
 
   const result = await db.query(
     `
-      SELECT id, title, text, created_at
+      SELECT id, title, text, sender_name, created_at
       FROM palco_urgent
       ORDER BY created_at DESC
       LIMIT 20
@@ -191,21 +205,33 @@ async function handleUrgentRequest(req, res) {
       id: row.id,
       title: row.title,
       text: row.text,
+      senderName: row.sender_name || 'Cliente',
       createdAt: row.created_at,
     })),
   });
 }
 
 async function handleUrgentSubmit(req, res, url) {
-  const token = url.searchParams.get('token') || req.headers['x-sync-token'] || '';
-  if (SYNC_TOKEN && token !== SYNC_TOKEN) {
-    sendJson(res, 401, { ok: false, error: 'Link urgente inválido.' });
-    return;
-  }
-
   const db = await getDb();
   if (!db) {
     sendJson(res, 503, { ok: false, error: 'Banco de dados não configurado no Railway.' });
+    return;
+  }
+
+  const accessKey = url.searchParams.get('key') || '';
+  let client = null;
+  if (accessKey) {
+    const clientResult = await db.query(
+      'SELECT id, name FROM palco_urgent_clients WHERE access_key = $1 AND active = TRUE',
+      [accessKey],
+    );
+    client = clientResult.rows[0] || null;
+  } else {
+    const token = url.searchParams.get('token') || req.headers['x-sync-token'] || '';
+    if (!SYNC_TOKEN || token === SYNC_TOKEN) client = { id: null, name: 'Cliente' };
+  }
+  if (!client) {
+    sendJson(res, 401, { ok: false, error: 'Este link não é válido ou foi desativado.' });
     return;
   }
 
@@ -232,7 +258,9 @@ async function handleUrgentSubmit(req, res, url) {
         </head>
         <body>
           <main>
-            <h1>Enviar urgente</h1>
+            <p style="margin:0;color:#78d39b;font-weight:800">CANAL DIRETO COM O PALCO</p>
+            <h1 style="margin:0">Enviar recado urgente</h1>
+            <p style="margin:0;color:#aeb6bf">Identificado como <strong>${escapeServerHtml(client.name)}</strong></p>
             <label>Título<input id="title" placeholder="Ex: Carro com alarme" /></label>
             <label>Recado<textarea id="text" rows="8" placeholder="Digite o recado para o locutor"></textarea></label>
             <button id="send">Enviar</button>
@@ -250,7 +278,12 @@ async function handleUrgentSubmit(req, res, url) {
                   text: document.querySelector('#text').value,
                 }),
               });
-              status.textContent = response.ok ? 'Enviado.' : 'Não foi possível enviar.';
+              const result = await response.json().catch(() => ({}));
+              status.textContent = response.ok ? 'Enviado para o palco.' : (result.error || 'Não foi possível enviar.');
+              if (response.ok) {
+                document.querySelector('#title').value = '';
+                document.querySelector('#text').value = '';
+              }
             });
           </script>
         </body>
@@ -275,14 +308,86 @@ async function handleUrgentSubmit(req, res, url) {
   const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const result = await db.query(
     `
-      INSERT INTO palco_urgent (id, title, text, created_at)
-      VALUES ($1, $2, $3, NOW())
+      INSERT INTO palco_urgent (id, title, text, client_id, sender_name, created_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
       RETURNING created_at
     `,
-    [id, title, text],
+    [id, title, text, client.id, client.name],
   );
 
   sendJson(res, 200, { ok: true, id, createdAt: result.rows[0].created_at });
+}
+
+async function handleUrgentClients(req, res, url) {
+  if (!isSyncAuthorized(req)) {
+    sendJson(res, 401, { ok: false, error: 'Código de sincronização inválido.' });
+    return;
+  }
+
+  const db = await getDb();
+  if (!db) {
+    sendJson(res, 503, { ok: false, error: 'Banco de dados não configurado no Railway.' });
+    return;
+  }
+
+  const id = decodeURIComponent(url.pathname.replace('/api/urgent-clients/', ''));
+  if (req.method === 'DELETE' && id && id !== '/api/urgent-clients') {
+    await db.query('UPDATE palco_urgent_clients SET active = FALSE WHERE id = $1', [id]);
+    sendJson(res, 200, { ok: true });
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/urgent-clients') {
+    const body = await readJsonBody(req);
+    const name = String(body.name || '').trim().slice(0, 60);
+    if (!name) {
+      sendJson(res, 400, { ok: false, error: 'Digite o nome do cliente.' });
+      return;
+    }
+    const clientId = crypto.randomUUID();
+    const accessKey = crypto.randomBytes(24).toString('base64url');
+    await db.query(
+      'INSERT INTO palco_urgent_clients (id, name, access_key) VALUES ($1, $2, $3)',
+      [clientId, name, accessKey],
+    );
+    sendJson(res, 201, {
+      ok: true,
+      client: { id: clientId, name, url: `${requestOrigin(req)}/api/urgent-submit?key=${accessKey}` },
+    });
+    return;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/urgent-clients') {
+    const result = await db.query(
+      'SELECT id, name, access_key, created_at FROM palco_urgent_clients WHERE active = TRUE ORDER BY created_at DESC',
+    );
+    sendJson(res, 200, {
+      ok: true,
+      clients: result.rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        url: `${requestOrigin(req)}/api/urgent-submit?key=${row.access_key}`,
+        createdAt: row.created_at,
+      })),
+    });
+    return;
+  }
+
+  sendJson(res, 405, { ok: false, error: 'Método não permitido.' });
+}
+
+function requestOrigin(req) {
+  const protocol = req.headers['x-forwarded-proto'] || 'http';
+  return `${protocol}://${req.headers.host}`;
+}
+
+function escapeServerHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 const server = http.createServer(async (req, res) => {
@@ -315,6 +420,14 @@ const server = http.createServer(async (req, res) => {
         await handleUrgentRequest(req, res);
       } catch (error) {
         sendJson(res, 500, { ok: false, error: error.message || 'Erro no urgente.' });
+      }
+      return;
+    }
+    if (url.pathname === '/api/urgent-clients' || url.pathname.startsWith('/api/urgent-clients/')) {
+      try {
+        await handleUrgentClients(req, res, url);
+      } catch (error) {
+        sendJson(res, 500, { ok: false, error: error.message || 'Erro nos links urgentes.' });
       }
       return;
     }
