@@ -57,14 +57,7 @@
           <div class="presenter-topic" id="presentTopic">Informes</div>
           <article id="presentText" class="present-text"></article>
           <div class="repeat-line">
-            <span id="repeatText" hidden>Restam 0 de 0</span>
             <button class="secondary-button" id="editCurrentBtn" type="button">Editar</button>
-          </div>
-          <div class="presenter-controls" hidden>
-            <button class="primary-button" id="doneBtn" type="button" hidden>Falei</button>
-            <button class="secondary-button" id="nextBtn" type="button" hidden>Próximo</button>
-            <button class="secondary-button previous-control" id="prevBtn" type="button" hidden>Anterior</button>
-            <button class="secondary-button previous-control" id="homeBtn" type="button" hidden>Home</button>
           </div>
           <label class="speed-control">
             Tamanho do texto
@@ -106,11 +99,6 @@
             <button class="primary-button mini-button" id="addSpeechBtn" type="button">+ Nota</button>
           </div>
           <input id="noteSearch" type="search" placeholder="Buscar nota pelo nome" aria-label="Buscar nota" />
-          <div class="toolbar note-toolbar" hidden>
-            <select id="topicFilter" aria-label="Filtrar tópico">
-              <option value="todos">Todos os tópicos</option>
-            </select>
-          </div>
           <div class="script-list" id="scriptList"></div>
         </section>
         <section class="edit-tools edit-panel" data-edit-panel="ajustes">
@@ -118,10 +106,6 @@
           <button class="secondary-button" id="duplicateRouteBtn" type="button">Duplicar roteiro</button>
           <button class="secondary-button" id="renameRouteBtn" type="button">Renomear roteiro</button>
           <button class="secondary-button" id="routeColorBtn" type="button">Cor do roteiro</button>
-          <button class="primary-button" id="addTopicBtn" type="button" hidden>+ Botão</button>
-          <button class="secondary-button" id="topicModeBtn" type="button" hidden>Modo do botão</button>
-          <button class="secondary-button" id="renameTopicBtn" type="button" hidden>Renomear botão</button>
-          <button class="secondary-button" id="reorderTopicsBtn" type="button" hidden>Reordenar Home</button>
           <button class="secondary-button" data-view-button="transfer" type="button">Transferir roteiro</button>
         </section>
       </section>
@@ -176,25 +160,10 @@
 
     <dialog id="speechDialog">
       <form method="dialog" class="dialog-form">
-        <h2 id="dialogTitle">Nova fala</h2>
+        <h2 id="dialogTitle">Nova nota</h2>
         <label>
           Nome da nota
           <input id="editTitle" type="text" maxlength="50" placeholder="Ex: Abraço 3" />
-        </label>
-        <div class="topic-editor-row" hidden>
-          <div>
-            <span>Tópico</span>
-            <strong id="editTopicSummary">Informes</strong>
-          </div>
-          <button class="secondary-button" id="showTopicBtn" type="button">Trocar tópico</button>
-        </div>
-        <label id="editTopicField" hidden>
-          Escolher tópico
-          <select id="editTopic"></select>
-        </label>
-        <label hidden>
-          Repetir quantas vezes?
-          <input id="editTarget" type="number" min="1" max="20" value="1" />
         </label>
         <label>
           Tipo da nota
@@ -272,69 +241,6 @@
         <p class="status" id="urgentHint">Recados enviados pelo link secreto aparecem aqui quando houver internet.</p>
         <div class="dialog-actions">
           <button class="secondary-button" id="refreshUrgentBtn" type="button">Atualizar</button>
-          <button class="primary-button" value="default" type="submit">Fechar</button>
-        </div>
-      </form>
-    </dialog>
-
-    <dialog id="topicDialog">
-      <form method="dialog" class="dialog-form">
-        <h2>Novo botão</h2>
-        <label>
-          Nome do botão
-          <input id="newTopicName" type="text" maxlength="28" placeholder="Ex: Sorteio" />
-        </label>
-        <div class="dialog-actions">
-          <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
-          <button class="primary-button" id="saveTopicBtn" value="default" type="submit">Criar</button>
-        </div>
-      </form>
-    </dialog>
-
-    <dialog id="topicModeDialog">
-      <form method="dialog" class="dialog-form">
-        <h2>Modo do botão</h2>
-        <label>
-          Botão
-          <select id="topicModeName"></select>
-        </label>
-        <label>
-          Modo
-          <select id="topicModeValue">
-            <option value="normal">Normal</option>
-            <option value="sponsor">Patrocinadores</option>
-          </select>
-        </label>
-        <div class="dialog-actions">
-          <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
-          <button class="primary-button" id="saveTopicModeBtn" value="default" type="submit">Salvar</button>
-        </div>
-      </form>
-    </dialog>
-
-    <dialog id="renameTopicDialog">
-      <form method="dialog" class="dialog-form">
-        <h2>Renomear botão</h2>
-        <label>
-          Nome atual
-          <select id="renameTopicFrom"></select>
-        </label>
-        <label>
-          Novo nome
-          <input id="renameTopicTo" type="text" maxlength="28" />
-        </label>
-        <div class="dialog-actions">
-          <button class="secondary-button" value="cancel" type="submit">Cancelar</button>
-          <button class="primary-button" id="saveRenameTopicBtn" value="default" type="submit">Salvar</button>
-        </div>
-      </form>
-    </dialog>
-
-    <dialog id="reorderDialog">
-      <form method="dialog" class="dialog-form">
-        <h2>Reordenar Home</h2>
-        <div class="reorder-list" id="reorderList"></div>
-        <div class="dialog-actions">
           <button class="primary-button" value="default" type="submit">Fechar</button>
         </div>
       </form>

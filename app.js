@@ -3,118 +3,12 @@ const RESTORE_POINT_KEY = 'roteiro-palco-ponto-restauracao';
 const CLOUD_TOKEN_KEY = 'roteiro-palco-sync-token';
 const CLOUD_SYNC_KEY = 'roteiro-palco-ultimo-sync';
 const URGENT_SEEN_KEY = 'roteiro-palco-urgentes-vistos';
-const OFFLINE_CACHE_NAME = 'palco-offline-v36';
+const OFFLINE_CACHE_NAME = 'palco-offline-v37';
 const OFFLINE_FILES = ['index.html', 'styles.css', 'app.js', 'manifest.json', 'service-worker.js', 'icon.svg'];
-
-const defaultTopics = [
-  'Informes',
-  'Programação',
-  'Agradecer',
-  'Patrocínio 1',
-  'Patrocínio 2',
-  'Patrocínio 3',
-  'Patrocínio 4',
-  'Apresentação',
-];
-
-const defaultSpeeches = [
-  {
-    topic: 'Informes',
-    text: 'Aproveita que você está aqui no UniSALESIANO! As inscrições para o Vestibular de Medicina estão abertas até 19 de junho. A prova será no dia 27 de junho, um sábado.',
-    target: 4,
-    remaining: 4,
-  },
-  {
-    topic: 'Informes',
-    text: 'Em breve divulgaremos também as vagas abertas para os Cursos Tradicionais. Fique de olho no site unisalesiano.com.br e nas redes sociais do UniSALESIANO.',
-    target: 3,
-    remaining: 3,
-  },
-  {
-    topic: 'Programação',
-    text: 'Dia 22 de maio, sexta-feira, 18h30: abertura dos portões. Sejam muito bem-vindos! Temos Área Kids gratuita, com roda gigante, infláveis e pipoca.',
-    target: 1,
-    remaining: 1,
-  },
-  {
-    topic: 'Programação',
-    text: 'Às 20h teremos a Procissão e Coroação de Nossa Senhora Auxiliadora. Convidamos todos a participarem com respeito, fé e devoção.',
-    target: 1,
-    remaining: 1,
-  },
-  {
-    topic: 'Programação',
-    text: 'Às 20h30, teremos a Quadrilha Universitária com mais de 150 casais! Vamos receber essa apresentação com muita energia e uma grande salva de palmas.',
-    target: 1,
-    remaining: 1,
-  },
-  {
-    topic: 'Programação',
-    text: 'Às 21h30 começa o show Violada 360, com Pedro Sanchez & Thiago e Matheus & Turelli. Preparem-se para curtir uma grande noite!',
-    target: 1,
-    remaining: 1,
-  },
-  {
-    topic: 'Agradecer',
-    text: 'Toda a renda desta noite é 100% destinada ao Projeto Social Oratório Dom Bosco. Cada ingresso, cada consumação, tudo vira impacto real na vida de muitas pessoas. Obrigado por estar aqui e fazer parte dessa história!',
-    target: 3,
-    remaining: 3,
-  },
-  {
-    topic: 'Agradecer',
-    text: 'Nosso muito obrigado à equipe de organização, aos colaboradores, voluntários, apoiadores e a todos que estão prestigiando a Quermesse UniSALESIANO.',
-    target: 2,
-    remaining: 2,
-  },
-  {
-    topic: 'Patrocínio 1',
-    text: 'Um agradecimento muito especial à Unimed Araçatuba, nosso maior patrocínio. Muito obrigado por apoiar este evento e esta causa tão importante.',
-    target: 5,
-    remaining: 5,
-  },
-  {
-    topic: 'Patrocínio 2',
-    text: 'Antes da próxima atração, nosso agradecimento especial aos patrocinadores VIP e Ouro da Quermesse UniSALESIANO 2026. Esse apoio é fundamental para a realização do evento.',
-    target: 3,
-    remaining: 3,
-  },
-  {
-    topic: 'Patrocínio 3',
-    text: 'Agradecemos também aos nossos apoiadores. Muito obrigado pela parceria, pela presença e por fazerem parte da Quermesse UniSALESIANO.',
-    target: 2,
-    remaining: 2,
-  },
-  {
-    topic: 'Patrocínio 4',
-    text: 'Agradecemos aos apoiadores Arquiteto e Pneu ATA-kar. Muito obrigado pela parceria e pelo apoio à nossa festa.',
-    target: 2,
-    remaining: 2,
-  },
-  {
-    topic: 'Apresentação',
-    text: 'Boa noite! Sejam todos muito bem-vindos à Quermesse UniSALESIANO 2026. Eu sou Edvan Santos e é uma alegria receber vocês aqui para essa noite especial.',
-    target: 1,
-    remaining: 1,
-  },
-  {
-    topic: 'Apresentação',
-    text: 'Vamos receber agora, com muito carinho e uma grande salva de palmas, a próxima atração da nossa noite!',
-    target: 2,
-    remaining: 2,
-  },
-  {
-    topic: 'Apresentação',
-    text: 'A seguir, teremos Open Farra. Continuem conosco e aproveitem a programação preparada para esta noite.',
-    target: 1,
-    remaining: 1,
-  },
-];
 
 let state = loadState();
 let activePlaylistId = '';
-let activeTopic = currentRoute().topics[0] || 'Informes';
 activePlaylistId = currentRoute().activePlaylistId || currentRoute().playlists?.[0]?.id || '';
-let presentationMode = 'topic';
 let currentIndex = 0;
 let editingIndex = null;
 let routeNameMode = 'new';
@@ -135,27 +29,16 @@ const playlistSelect = document.querySelector('#playlistSelect');
 const playlistPicker = document.querySelector('#playlistPicker');
 const playlistItems = document.querySelector('#playlistItems');
 const scriptList = document.querySelector('#scriptList');
-const topicFilter = document.querySelector('#topicFilter');
 const noteSearch = document.querySelector('#noteSearch');
 const presentTopic = document.querySelector('#presentTopic');
 const presentRouteName = document.querySelector('#presentRouteName');
 const presentCounter = document.querySelector('#presentCounter');
 const presentText = document.querySelector('#presentText');
-const repeatText = document.querySelector('#repeatText');
 const editCurrentBtn = document.querySelector('#editCurrentBtn');
 const sidePrevBtn = document.querySelector('#sidePrevBtn');
 const sideNextBtn = document.querySelector('#sideNextBtn');
 const speechDialog = document.querySelector('#speechDialog');
-const topicDialog = document.querySelector('#topicDialog');
-const topicModeDialog = document.querySelector('#topicModeDialog');
-const renameTopicDialog = document.querySelector('#renameTopicDialog');
-const reorderDialog = document.querySelector('#reorderDialog');
-const editTopic = document.querySelector('#editTopic');
-const editTopicField = document.querySelector('#editTopicField');
-const editTopicSummary = document.querySelector('#editTopicSummary');
-const showTopicBtn = document.querySelector('#showTopicBtn');
 const editTitle = document.querySelector('#editTitle');
-const editTarget = document.querySelector('#editTarget');
 const editKind = document.querySelector('#editKind');
 const editText = document.querySelector('#editText');
 const editVisual = document.querySelector('#editVisual');
@@ -164,17 +47,11 @@ const tableEditorPanel = document.querySelector('#tableEditorPanel');
 const editTable = document.querySelector('#editTable');
 const tableEditorTitle = document.querySelector('#tableEditorTitle');
 const dialogTitle = document.querySelector('#dialogTitle');
-const newTopicName = document.querySelector('#newTopicName');
-const topicModeName = document.querySelector('#topicModeName');
-const topicModeValue = document.querySelector('#topicModeValue');
-const renameTopicFrom = document.querySelector('#renameTopicFrom');
-const renameTopicTo = document.querySelector('#renameTopicTo');
 const backupText = document.querySelector('#backupText');
 const backupScope = document.querySelector('#backupScope');
 const syncTokenInput = document.querySelector('#syncTokenInput');
 const urgentLinkInput = document.querySelector('#urgentLinkInput');
 const cloudStatus = document.querySelector('#cloudStatus');
-const reorderList = document.querySelector('#reorderList');
 const offlineStatus = document.querySelector('#offlineStatus');
 const restorePointStatus = document.querySelector('#restorePointStatus');
 const currentRouteName = document.querySelector('#currentRouteName');
@@ -201,7 +78,6 @@ document.querySelectorAll('[data-view-button]').forEach((button) => {
   button.addEventListener('click', () => setView(button.dataset.viewButton));
 });
 
-document.querySelector('#homeBtn').addEventListener('click', () => setView('home'));
 document.querySelector('#routeSelectorBtn').addEventListener('click', openRouteDialog);
 document.querySelectorAll('[data-open-routes]').forEach((button) => {
   button.addEventListener('click', openRouteDialog);
@@ -210,13 +86,6 @@ document.querySelector('#newRouteBtn').addEventListener('click', () => openRoute
 document.querySelector('#duplicateRouteBtn').addEventListener('click', duplicateCurrentRoute);
 document.querySelector('#renameRouteBtn').addEventListener('click', () => openRouteNameDialog('rename'));
 document.querySelector('#routeColorBtn').addEventListener('click', () => routeColorDialog.showModal());
-document.querySelector('#addTopicBtn').addEventListener('click', openTopicDialog);
-document.querySelector('#topicModeBtn').addEventListener('click', openTopicModeDialog);
-document.querySelector('#renameTopicBtn').addEventListener('click', () => {
-  const topic = topicFilter.value === 'todos' ? activeTopic : topicFilter.value;
-  openRenameTopicDialog(topic);
-});
-document.querySelector('#reorderTopicsBtn').addEventListener('click', openReorderDialog);
 document.querySelector('#addSpeechBtn').addEventListener('click', () => openSpeechDialog());
 document.querySelector('#quickPlaylistBtn').addEventListener('click', () => openPlaylistDialog('new'));
 document.querySelector('#newPlaylistBtn').addEventListener('click', () => openPlaylistDialog('new'));
@@ -225,9 +94,6 @@ document.querySelector('#renamePlaylistBtn').addEventListener('click', () => ope
 document.querySelector('#deletePlaylistBtn').addEventListener('click', deleteActivePlaylist);
 document.querySelector('#presentPlaylistBtn').addEventListener('click', () => openPlaylist(activePlaylistId));
 editCurrentBtn.addEventListener('click', editCurrentSpeech);
-document.querySelector('#prevBtn').addEventListener('click', () => movePresenter(-1));
-document.querySelector('#nextBtn').addEventListener('click', () => movePresenter(1));
-document.querySelector('#doneBtn').addEventListener('click', markCurrentSpoken);
 sidePrevBtn.addEventListener('click', () => movePresenter(-1));
 sideNextBtn.addEventListener('click', () => movePresenter(1));
 const presenterCard = document.querySelector('.presenter-card');
@@ -277,7 +143,6 @@ document.querySelector('#pushCloudBtn').addEventListener('click', pushCloudState
 document.querySelector('#pullCloudBtn').addEventListener('click', pullCloudState);
 document.querySelector('#copyUrgentLinkBtn').addEventListener('click', copyUrgentLink);
 
-topicFilter.addEventListener('change', renderEditList);
 noteSearch.addEventListener('input', renderEditList);
 playlistSelect.addEventListener('change', () => {
   selectPlaylist(playlistSelect.value);
@@ -291,34 +156,14 @@ syncTokenInput.addEventListener('input', () => {
   fetchUrgentMessages();
 });
 document.addEventListener('selectionchange', rememberEditorSelection);
-editTopic.addEventListener('change', updateSpeechTopicSummary);
 editKind.addEventListener('change', updateSpeechKindUI);
 document.querySelector('#clearTableBtn').addEventListener('click', clearTableEditor);
-showTopicBtn.addEventListener('click', () => setTopicPickerVisible(editTopicField.hidden));
 urgentBtn.addEventListener('click', openUrgentDialog);
 document.querySelector('#refreshUrgentBtn').addEventListener('click', fetchUrgentMessages);
 
 document.querySelector('#saveSpeechBtn').addEventListener('click', (event) => {
   event.preventDefault();
   saveSpeechFromDialog();
-});
-
-document.querySelector('#saveTopicBtn').addEventListener('click', (event) => {
-  event.preventDefault();
-  saveTopicFromDialog();
-});
-
-document.querySelector('#saveTopicModeBtn').addEventListener('click', (event) => {
-  event.preventDefault();
-  saveTopicModeFromDialog();
-});
-topicModeName.addEventListener('change', () => {
-  topicModeValue.value = currentRoute().topicModes?.[topicModeName.value] || 'normal';
-});
-
-document.querySelector('#saveRenameTopicBtn').addEventListener('click', (event) => {
-  event.preventDefault();
-  saveRenameTopicFromDialog();
 });
 
 document.querySelector('#saveRouteNameBtn').addEventListener('click', (event) => {
@@ -352,8 +197,7 @@ function loadState() {
       {
         id: createId(),
         name: 'Roteiro Principal',
-        topics: defaultTopics,
-        speeches: defaultSpeeches,
+        speeches: [],
         playlists: [],
       },
     ],
@@ -361,25 +205,15 @@ function loadState() {
 }
 
 function normalizeState(nextState) {
-  const normalizeTopicName = (topic) => (topic === 'Agradecimentos' ? 'Agradecer' : topic);
-
   const normalizeRoute = (route, index = 0) => {
-    const hasSpeechList = Array.isArray(route.speeches);
-    const baseSpeeches = hasSpeechList ? route.speeches : defaultSpeeches;
-    const baseTopics = Array.isArray(route.topics) && route.topics.length ? route.topics : defaultTopics;
-    const topics = [...new Set([...baseTopics, ...baseSpeeches.map((speech) => speech.topic)].map(normalizeTopicName))].filter(Boolean);
+    const baseSpeeches = Array.isArray(route.speeches) ? route.speeches : [];
     const speeches = baseSpeeches.map((speech, speechIndex) => {
-      const target = Math.max(1, Number(speech.target || 1));
-      const remaining = Math.min(target, Math.max(0, Number(speech.remaining ?? target)));
       return {
         id: speech.id || createId(),
         title: speech.title || createSpeechTitle(speech, speechIndex),
-        topic: normalizeTopicName(speech.topic || topics[0] || 'Informes'),
         kind: ['table', 'sponsor'].includes(speech.kind) ? speech.kind : 'text',
         text: speech.text || '',
         table: normalizeSpeechTable(speech.table),
-        target,
-        remaining,
       };
     });
     const speechIds = new Set(speeches.map((speech) => speech.id));
@@ -403,11 +237,9 @@ function normalizeState(nextState) {
       id: route.id || createId(),
       name: route.name || `Roteiro ${index + 1}`,
       color: route.color || '#f4f2ec',
-      topics,
       speeches,
       playlists,
       activePlaylistId: playlists.some((playlist) => playlist.id === route.activePlaylistId) ? route.activePlaylistId : playlists[0]?.id || '',
-      topicModes: route.topicModes || {},
     };
   };
 
@@ -419,8 +251,7 @@ function normalizeState(nextState) {
       normalizeRoute({
         id: createId(),
         name: 'Roteiro Principal',
-        topics: nextState.topics || defaultTopics,
-        speeches: nextState.speeches || defaultSpeeches,
+        speeches: nextState.speeches || [],
       }),
     ];
   }
@@ -443,7 +274,6 @@ function currentRoute() {
     route.activePlaylistId = route.playlists?.[0]?.id || '';
   }
   activePlaylistId = route.activePlaylistId || activePlaylistId || route.playlists?.[0]?.id || '';
-  if (!route.topics?.length) route.topics = [...defaultTopics];
   if (!Array.isArray(route.speeches)) route.speeches = [];
   if (!Array.isArray(route.playlists)) route.playlists = [];
   return route;
@@ -458,15 +288,7 @@ function setView(name) {
     view.classList.toggle('active', viewName === name);
   });
 
-  if (name === 'present' && presentationMode === 'topic') focusFirstAvailableInTopic();
   render();
-}
-
-function openTopic(topic) {
-  activeTopic = topic;
-  presentationMode = 'topic';
-  currentIndex = 0;
-  setView('present');
 }
 
 function openPlaylist(playlistId) {
@@ -476,7 +298,6 @@ function openPlaylist(playlistId) {
 
   activePlaylistId = playlist.id;
   route.activePlaylistId = playlist.id;
-  presentationMode = 'playlist';
   currentIndex = 0;
   setView('present');
 }
@@ -491,29 +312,12 @@ function render() {
   });
   presentRouteName.textContent = route.name;
   presentRouteName.style.color = route.color || '';
-  renderTopicOptions();
   renderPlaylistOptions();
   renderHome();
   renderPresenter();
   renderPlaylistItems();
   renderEditList();
   renderUrgentButton();
-  renderSummary();
-}
-
-function renderTopicOptions() {
-  const route = currentRoute();
-  const selectedFilter = topicFilter.value || 'todos';
-  const selectedEditTopic = editTopic.value || activeTopic || route.topics[0];
-  const options = route.topics.map((topic) => `<option value="${escapeHtml(topic)}">${escapeHtml(topic)}</option>`).join('');
-  editTopic.innerHTML = options;
-  topicModeName.innerHTML = options;
-  renameTopicFrom.innerHTML = options;
-  topicFilter.innerHTML = `<option value="todos">Todos os tópicos</option>${options}`;
-  editTopic.value = route.topics.includes(selectedEditTopic) ? selectedEditTopic : route.topics[0];
-  topicModeName.value = route.topics.includes(activeTopic) ? activeTopic : route.topics[0];
-  renameTopicFrom.value = route.topics.includes(activeTopic) ? activeTopic : route.topics[0];
-  topicFilter.value = selectedFilter === 'todos' || route.topics.includes(selectedFilter) ? selectedFilter : 'todos';
 }
 
 function renderPlaylistOptions() {
@@ -578,16 +382,14 @@ function renderHome() {
 
 function renderPresenter() {
   const entries = getPresentationEntries();
-  const contextName = getPresentationContextName();
-  presentTopic.textContent = contextName;
+  presentTopic.textContent = getActivePlaylist()?.name || 'Playlist';
 
   if (!entries.length) {
     presentCounter.textContent = '0/0';
     updatePresenterNav(0);
     presentText.classList.remove('list-mode', 'sponsor-mode', 'rich-mode', 'table-mode');
-    presentText.textContent = presentationMode === 'playlist' ? 'Essa playlist ainda não tem notas.' : 'Nenhuma fala nesse botão ainda.';
-    repeatText.textContent = presentationMode === 'playlist' ? 'Adicione notas em EDITAR.' : 'Crie uma fala para este tópico.';
-    editCurrentBtn.textContent = presentationMode === 'playlist' ? 'Montar' : 'Editar';
+    presentText.textContent = 'Essa playlist ainda não tem notas.';
+    editCurrentBtn.textContent = 'Montar';
     return;
   }
 
@@ -596,19 +398,11 @@ function renderPresenter() {
   const { speech } = entries[currentIndex];
   presentCounter.textContent = `${currentIndex + 1}/${entries.length}`;
   renderPresentText(speech);
-  repeatText.textContent = `Restam ${speech.remaining} de ${speech.target}`;
   editCurrentBtn.textContent = 'Editar';
 }
 
 function getPresentationEntries() {
   const route = currentRoute();
-  if (presentationMode !== 'playlist') {
-    return getSpeechesByTopic(activeTopic).map((speech) => ({
-      speech,
-      speechIndex: route.speeches.indexOf(speech),
-    }));
-  }
-
   const playlist = getActivePlaylist();
   if (!playlist) return [];
 
@@ -629,11 +423,6 @@ function updatePresenterNav(total) {
   sideNextBtn.disabled = total <= 0 || currentIndex >= total - 1;
 }
 
-function getPresentationContextName() {
-  if (presentationMode === 'playlist') return getActivePlaylist()?.name || 'Playlist';
-  return activeTopic || 'Sem tópico';
-}
-
 function renderPresentText(speech) {
   if (speech.kind === 'table') {
     renderTableText(speech);
@@ -641,8 +430,7 @@ function renderPresentText(speech) {
   }
 
   const text = speech.text || '';
-  const topic = speech.topic || activeTopic;
-  if (speech.kind === 'sponsor' || currentRoute().topicModes?.[topic] === 'sponsor') {
+  if (speech.kind === 'sponsor') {
     renderSponsorText(text);
     return;
   }
@@ -886,7 +674,7 @@ function renderEditList() {
   scriptList.innerHTML = visible
     .map(
       (speech) => `
-        <article class="script-item ${speech.remaining === 0 ? 'done' : ''}">
+        <article class="script-item">
           <div class="script-head">
             <div>
               <strong class="script-title">${escapeHtml(speech.title || createSpeechTitle(speech, speech.index))}</strong>
@@ -938,7 +726,7 @@ function renderPlaylistItems() {
           <div class="playlist-item-head">
             <button class="move-handle" type="button" data-playlist-drag="${index}">Mover</button>
             <div>
-              <strong>${escapeHtml(index + 1)}. ${escapeHtml(speech.title || speech.topic)}</strong>
+              <strong>${escapeHtml(index + 1)}. ${escapeHtml(speech.title || 'Nota')}</strong>
               <span>${escapeHtml(getSpeechKindLabel(speech))}</span>
             </div>
           </div>
@@ -968,20 +756,6 @@ function renderPlaylistItems() {
   playlistItems.querySelectorAll('[data-playlist-drag]').forEach((button) => {
     button.addEventListener('pointerdown', (event) => startPlaylistDrag(event, Number(button.dataset.playlistDrag)));
   });
-}
-
-function renderEditPreview(speech) {
-  if (speech.kind !== 'table') return formatHighlights(speech.text);
-
-  const table = normalizeSpeechTable(speech.table);
-  const columns = getTableColumns(table);
-  const rows = table.rows.filter((row) => row.some((cell) => cell.trim())).slice(0, 4);
-  const preview = [normalizeTableRow(table.headers, [], columns), ...rows]
-    .map((row) => normalizeTableRow(row, [], columns).filter(Boolean).join(' | '))
-    .filter(Boolean)
-    .join('\n');
-
-  return `<strong class="table-preview-label">Tabela ${columns} coluna${columns > 1 ? 's' : ''}</strong>${escapeHtml(preview || 'Tabela vazia')}`;
 }
 
 function getSpeechKindLabel(speech) {
@@ -1180,22 +954,13 @@ function editPlaylistItem(index) {
   if (speechIndex >= 0) openSpeechDialog(speechIndex);
 }
 
-function renderSummary() {
-  return;
-}
-
 function openSpeechDialog(index = null) {
   editingIndex = index;
-  dialogTitle.textContent = index === null ? 'Nova fala' : 'Editar fala';
-  renderTopicOptions();
+  dialogTitle.textContent = index === null ? 'Nova nota' : 'Editar nota';
 
   const speech = index === null ? null : currentRoute().speeches[index];
   const text = normalizeHighlightMarkup(speech?.text || '');
   editTitle.value = speech?.title || '';
-  editTopic.value = speech?.topic || activeTopic || currentRoute().topics[0];
-  updateSpeechTopicSummary();
-  setTopicPickerVisible(false);
-  editTarget.value = speech?.target || 1;
   editKind.value = getEditKindValue(speech);
   editText.value = text;
   editVisual.innerHTML = markupToEditorHtml(text);
@@ -1203,15 +968,6 @@ function openSpeechDialog(index = null) {
   updateSpeechKindUI();
   savedEditorRange = null;
   speechDialog.showModal();
-}
-
-function updateSpeechTopicSummary() {
-  editTopicSummary.textContent = editTopic.value || 'Sem tópico';
-}
-
-function setTopicPickerVisible(visible) {
-  editTopicField.hidden = !visible;
-  showTopicBtn.textContent = visible ? 'Ocultar tópicos' : 'Trocar tópico';
 }
 
 function updateSpeechKindUI() {
@@ -1341,9 +1097,7 @@ function editCurrentSpeech() {
     return;
   }
 
-  if (presentationMode === 'playlist') {
-    setView('edit');
-  }
+  setView('edit');
 }
 
 function saveSpeechFromDialog() {
@@ -1361,21 +1115,15 @@ function saveSpeechFromDialog() {
 
   if (!text) return;
 
-  const target = clamp(Number(editTarget.value || 1), 1, 20);
   const route = currentRoute();
-  const topic = editTopic.value || route.topics[0] || 'Notas';
   const previous = editingIndex === null ? null : route.speeches[editingIndex];
-  const title = editTitle.value.trim() || createSpeechTitle({ topic, text }, route.speeches.length);
-  const spoken = previous ? previous.target - previous.remaining : 0;
+  const title = editTitle.value.trim() || createSpeechTitle({ text }, route.speeches.length);
   const nextSpeech = {
     id: previous?.id || createId(),
     title,
-    topic,
     kind,
     text,
     table,
-    target,
-    remaining: clamp(target - spoken, 0, target),
   };
 
   if (editingIndex === null) {
@@ -1384,79 +1132,7 @@ function saveSpeechFromDialog() {
     route.speeches[editingIndex] = nextSpeech;
   }
 
-  if (!route.topics.includes(topic)) route.topics.push(topic);
-  activeTopic = topic;
   speechDialog.close();
-  saveAndRender();
-}
-
-function openTopicDialog() {
-  newTopicName.value = '';
-  topicDialog.showModal();
-}
-
-function saveTopicFromDialog() {
-  const topic = newTopicName.value.trim();
-  if (!topic) return;
-
-  const route = currentRoute();
-  if (!route.topics.includes(topic)) route.topics.push(topic);
-  route.topicModes ||= {};
-  activeTopic = topic;
-  topicDialog.close();
-  saveAndRender();
-}
-
-function openTopicModeDialog() {
-  renderTopicOptions();
-  topicModeName.value = currentRoute().topics.includes(activeTopic) ? activeTopic : currentRoute().topics[0];
-  topicModeValue.value = currentRoute().topicModes?.[topicModeName.value] || 'normal';
-  topicModeDialog.showModal();
-}
-
-function saveTopicModeFromDialog() {
-  const route = currentRoute();
-  const topic = topicModeName.value;
-  const mode = topicModeValue.value;
-  route.topicModes ||= {};
-
-  if (mode === 'normal') {
-    delete route.topicModes[topic];
-  } else {
-    route.topicModes[topic] = mode;
-  }
-
-  activeTopic = topic;
-  topicModeDialog.close();
-  saveAndRender();
-}
-
-function openRenameTopicDialog(topic) {
-  activeTopic = topic;
-  renderTopicOptions();
-  renameTopicFrom.value = topic;
-  renameTopicTo.value = topic;
-  renameTopicDialog.showModal();
-}
-
-function saveRenameTopicFromDialog() {
-  const oldTopic = renameTopicFrom.value;
-  const newTopic = renameTopicTo.value.trim();
-  if (!oldTopic || !newTopic) return;
-
-  const route = currentRoute();
-  route.topics = route.topics.map((topic) => (topic === oldTopic ? newTopic : topic));
-  route.topics = [...new Set(route.topics)];
-  route.topicModes ||= {};
-  if (route.topicModes[oldTopic]) {
-    route.topicModes[newTopic] = route.topicModes[oldTopic];
-    delete route.topicModes[oldTopic];
-  }
-  route.speeches.forEach((speech) => {
-    if (speech.topic === oldTopic) speech.topic = newTopic;
-  });
-  activeTopic = newTopic;
-  renameTopicDialog.close();
   saveAndRender();
 }
 
@@ -1474,48 +1150,6 @@ function deleteSpeech(index) {
   });
   currentIndex = 0;
   saveAndRender();
-}
-
-function openReorderDialog() {
-  renderReorderList();
-  reorderDialog.showModal();
-}
-
-function renderReorderList() {
-  reorderList.innerHTML = currentRoute().topics
-    .map(
-      (topic, index) => `
-        <div class="reorder-item">
-          <strong>${escapeHtml(topic)}</strong>
-          <div>
-            <button class="secondary-button" type="button" data-move-up="${index}">Subir</button>
-            <button class="secondary-button" type="button" data-move-down="${index}">Descer</button>
-          </div>
-        </div>
-      `,
-    )
-    .join('');
-
-  reorderList.querySelectorAll('[data-move-up]').forEach((button) => {
-    button.addEventListener('click', () => moveTopic(Number(button.dataset.moveUp), -1));
-  });
-
-  reorderList.querySelectorAll('[data-move-down]').forEach((button) => {
-    button.addEventListener('click', () => moveTopic(Number(button.dataset.moveDown), 1));
-  });
-}
-
-function moveTopic(index, direction) {
-  const nextIndex = index + direction;
-  const route = currentRoute();
-  if (nextIndex < 0 || nextIndex >= route.topics.length) return;
-
-  const moved = route.topics[index];
-  route.topics[index] = route.topics[nextIndex];
-  route.topics[nextIndex] = moved;
-  saveState();
-  render();
-  renderReorderList();
 }
 
 function openRouteDialog() {
@@ -1552,9 +1186,7 @@ function openRoute(routeId) {
   if (!route) return;
 
   state.activeRouteId = route.id;
-  activeTopic = route.topics[0] || 'Informes';
   activePlaylistId = route.activePlaylistId || route.playlists?.[0]?.id || '';
-  presentationMode = 'topic';
   currentIndex = 0;
   routeDialog.close();
   saveAndRender();
@@ -1579,17 +1211,13 @@ function saveRouteNameFromDialog() {
       id: createId(),
       name,
       color: currentRoute().color || '#f4f2ec',
-      topics: [...defaultTopics],
       speeches: [],
       playlists: [],
       activePlaylistId: '',
-      topicModes: {},
     };
     state.routes.push(route);
     state.activeRouteId = route.id;
-    activeTopic = route.topics[0] || 'Informes';
     activePlaylistId = '';
-    presentationMode = 'topic';
   }
 
   routeNameDialog.close();
@@ -1603,7 +1231,6 @@ function duplicateCurrentRoute() {
     id: createId(),
     name: `${source.name} - Cópia`,
     color: source.color || '#f4f2ec',
-    topics: [...source.topics],
     speeches: source.speeches.map((speech) => ({ ...speech })),
     playlists: (source.playlists || []).map((playlist) => ({
       ...playlist,
@@ -1611,14 +1238,11 @@ function duplicateCurrentRoute() {
       items: [...playlist.items],
     })),
     activePlaylistId: '',
-    topicModes: { ...(source.topicModes || {}) },
   };
   route.activePlaylistId = route.playlists[0]?.id || '';
   state.routes.push(route);
   state.activeRouteId = route.id;
-  activeTopic = route.topics[0] || 'Informes';
   activePlaylistId = route.activePlaylistId || route.playlists?.[0]?.id || '';
-  presentationMode = 'topic';
   saveAndRender();
   setView('home');
 }
@@ -1638,9 +1262,7 @@ function deleteRoute(routeId) {
   state.routes = state.routes.filter((item) => item.id !== routeId);
   if (state.activeRouteId === routeId) {
     state.activeRouteId = state.routes[0].id;
-    activeTopic = state.routes[0].topics[0] || 'Informes';
     activePlaylistId = state.routes[0].activePlaylistId || state.routes[0].playlists?.[0]?.id || '';
-    presentationMode = 'topic';
   }
 
   saveAndRender();
@@ -1714,9 +1336,7 @@ function importBackup() {
       state = normalizeState(nextState);
     }
 
-    activeTopic = currentRoute().topics[0] || 'Informes';
     activePlaylistId = currentRoute().activePlaylistId || currentRoute().playlists?.[0]?.id || '';
-    presentationMode = 'topic';
     currentIndex = 0;
     saveAndRender();
     setView('home');
@@ -1770,9 +1390,7 @@ function restoreSavedPoint() {
   try {
     const parsed = JSON.parse(stored);
     state = normalizeState(parsed.data);
-    activeTopic = currentRoute().topics[0] || 'Informes';
     activePlaylistId = currentRoute().activePlaylistId || currentRoute().playlists?.[0]?.id || '';
-    presentationMode = 'topic';
     currentIndex = 0;
     saveAndRender();
     setView('home');
@@ -1875,9 +1493,7 @@ async function pullCloudState() {
 
     if (!response.ok) throw new Error(result.error || 'Não consegui buscar da nuvem.');
     state = normalizeState(result.state);
-    activeTopic = currentRoute().topics[0] || 'Informes';
     activePlaylistId = currentRoute().activePlaylistId || currentRoute().playlists?.[0]?.id || '';
-    presentationMode = 'topic';
     currentIndex = 0;
     saveAndRender();
     saveCloudSync('Buscado da nuvem', result.updatedAt);
@@ -1979,15 +1595,12 @@ function createNoteFromUrgent(messageId, addToPlaylist) {
   if (!message) return;
 
   const route = currentRoute();
-  const topic = 'Urgente';
-  if (!route.topics.includes(topic)) route.topics.push(topic);
   const speech = {
     id: createId(),
     title: message.title || 'Urgente',
-    topic,
+    kind: 'text',
     text: message.text || '',
-    target: 1,
-    remaining: 1,
+    table: normalizeSpeechTable(),
   };
   route.speeches.push(speech);
 
@@ -2050,22 +1663,6 @@ function movePresenter(direction) {
   renderPresenter();
 }
 
-function markCurrentSpoken() {
-  const entries = getPresentationEntries();
-  if (!entries.length) return;
-
-  const { speech } = entries[currentIndex];
-  speech.remaining = Math.max(0, speech.remaining - 1);
-  if (currentIndex < entries.length - 1) currentIndex += 1;
-  saveAndRender();
-}
-
-function focusFirstAvailableInTopic() {
-  const speeches = getSpeechesByTopic(activeTopic);
-  const next = speeches.findIndex((speech) => speech.remaining > 0);
-  currentIndex = next >= 0 ? next : 0;
-}
-
 const swipeState = {
   active: false,
   pointerId: null,
@@ -2124,38 +1721,13 @@ function cancelPresenterSwipe(event) {
   swipeState.horizontalIntent = false;
 }
 
-function getSpeechesByTopic(topic) {
-  return currentRoute().speeches.filter((speech) => speech.topic === topic);
-}
-
-function resetDefault() {
-  state = normalizeState({
-    routes: [
-      {
-        id: createId(),
-        name: 'Roteiro Principal',
-        color: '#f4f2ec',
-        topics: defaultTopics,
-        speeches: defaultSpeeches.map((speech) => ({ ...speech })),
-        playlists: [],
-        topicModes: {},
-      },
-    ],
-  });
-  activeTopic = currentRoute().topics[0];
-  activePlaylistId = currentRoute().activePlaylistId || currentRoute().playlists?.[0]?.id || '';
-  presentationMode = 'topic';
-  currentIndex = 0;
-  saveAndRender();
-}
-
 function saveAndRender() {
   saveState();
   render();
 }
 
 function createSpeechTitle(speech, index = 0) {
-  const source = String(speech.title || speech.text || speech.topic || '').trim();
+  const source = String(speech.title || speech.text || '').trim();
   const firstLine = source.split('\n').map((line) => line.trim()).find(Boolean) || `Nota ${index + 1}`;
   const clean = firstLine.replace(/\[\[(?:amarelo|azul|verde|vermelho):(.+?)\]\]/gi, '$1');
   return clean.length > 42 ? `${clean.slice(0, 39).trim()}...` : clean;
@@ -2268,10 +1840,6 @@ function normalizeHighlightMarkup(value) {
   }
 
   return next;
-}
-
-function stripHighlightMarkup(value) {
-  return normalizeHighlightMarkup(value).replace(/\[\[(?:(?:amarelo|azul|verde|vermelho):)?(.+?)\]\]/gi, '$1');
 }
 
 function highlightColors() {

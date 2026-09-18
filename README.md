@@ -2,6 +2,14 @@
 
 App pessoal para locução de palco, com PWA/offline para uso no iPhone.
 
+## Estrutura
+
+- Cada roteiro possui uma biblioteca de notas e suas playlists.
+- A nota guarda nome, conteúdo e modo de apresentação: texto, patrocinadores ou tabela.
+- A playlist guarda apenas a ordem das notas e pode repetir a mesma nota.
+- A apresentação sempre abre uma playlist e navega por setas ou gesto lateral.
+- O estado principal fica no aparelho e pode ser sincronizado com a nuvem.
+
 Depois de publicar em HTTPS, abra o link no Safari do iPhone, espere aparecer "OFFLINE PRONTO" e use "Adicionar à Tela de Início".
 
 Para Railway, defina as variáveis:
