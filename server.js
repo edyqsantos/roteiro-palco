@@ -107,8 +107,16 @@ async function getDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
-  await dbPool.query('ALTER TABLE palco_urgent ADD COLUMN IF NOT EXISTS client_id TEXT');
-  await dbPool.query('ALTER TABLE palco_urgent ADD COLUMN IF NOT EXISTS sender_name TEXT');
+  const urgentColumns = await dbPool.query(
+    "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'palco_urgent'"
+  );
+  const urgentColumnNames = new Set(urgentColumns.rows.map((row) => row.column_name));
+  if (!urgentColumnNames.has('client_id')) {
+    await dbPool.query('ALTER TABLE palco_urgent ADD COLUMN IF NOT EXISTS client_id TEXT');
+  }
+  if (!urgentColumnNames.has('sender_name')) {
+    await dbPool.query('ALTER TABLE palco_urgent ADD COLUMN IF NOT EXISTS sender_name TEXT');
+  }
   await dbPool.query(`
     CREATE TABLE IF NOT EXISTS palco_urgent_clients (
       id TEXT PRIMARY KEY,
